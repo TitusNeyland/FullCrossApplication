@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         Screen.Main -> {
-                            Greeting("Android")
+                            MainScreen()
                         }
                     }
                 }
