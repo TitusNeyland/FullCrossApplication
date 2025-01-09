@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.fullcrossapplication.screens.DonateScreen
 
 enum class BottomNavItem(val title: String, val icon: ImageVector) {
     Read("Read", Icons.Default.Book),
@@ -57,7 +58,7 @@ fun MainScreen() {
                 BottomNavItem.Read -> Text("Read Screen")
                 BottomNavItem.Notes -> Text("Notes Screen")
                 BottomNavItem.Watch -> Text("Watch Screen")
-                BottomNavItem.Donate -> Text("Donate Screen")
+                BottomNavItem.Donate -> DonateScreen()
                 BottomNavItem.Account -> Text("Account Screen")
             }
         }
