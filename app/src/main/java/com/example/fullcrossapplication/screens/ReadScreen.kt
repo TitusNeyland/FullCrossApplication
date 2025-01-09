@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material.icons.filled.NavigateBefore
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +41,8 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
     val selectedBible by viewModel.selectedBible.collectAsStateWithLifecycle()
     val selectedBook by viewModel.selectedBook.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
+    var showNoteDialog by remember { mutableStateOf(false) }
+    val selectedVerse by viewModel.selectedVerse.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Top Navigation Bar
@@ -137,13 +140,15 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                                 }
 
                                 // Chapter content
-                                Text(
-                                    text = BibleTextFormatter.formatBibleText(currentChapter!!.content),
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        lineHeight = 28.sp
-                                    ),
-                                    modifier = Modifier.padding(bottom = 16.dp)
-                                )
+                                BibleTextFormatter.formatBibleText(currentChapter!!.content).forEach { verse ->
+                                    VerseItem(
+                                        verse = verse,
+                                        onVerseClick = {
+                                            viewModel.setSelectedVerse("${selectedBook?.name} ${currentChapter?.number}:${verse.verseNumber}")
+                                            showNoteDialog = true
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
@@ -215,6 +220,18 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                 )
             }
         }
+
+        // Add note dialog
+        if (showNoteDialog && selectedVerse != null) {
+            AddVerseNoteDialog(
+                verseReference = selectedVerse!!,
+                onDismiss = { showNoteDialog = false },
+                onNoteAdded = { title, content ->
+                    viewModel.addVerseNote(title, content, selectedVerse!!)
+                    showNoteDialog = false
+                }
+            )
+        }
     }
 }
 
@@ -256,4 +273,86 @@ private fun BookItem(book: Book, onClick: (Book) -> Unit) {
             style = MaterialTheme.typography.titleMedium
         )
     }
+}
+
+@Composable
+private fun VerseItem(
+    verse: BibleTextFormatter.FormattedVerse,
+    onVerseClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onVerseClick),
+        color = MaterialTheme.colorScheme.surface
+    ) {
+        Row(
+            modifier = Modifier.padding(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (verse.isVerseStart) {
+                Text(
+                    text = "[${verse.verseNumber}]",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            Text(
+                text = verse.text,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddVerseNoteDialog(
+    verseReference: String,
+    onDismiss: () -> Unit,
+    onNoteAdded: (String, String) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Note for $verseReference") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = content,
+                    onValueChange = { content = it },
+                    label = { Text("Your thoughts") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (title.isNotBlank() && content.isNotBlank()) {
+                        onNoteAdded(title, content)
+                    }
+                }
+            ) {
+                Text("Save")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

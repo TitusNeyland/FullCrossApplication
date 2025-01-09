@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("com.google.devtools.ksp") version "1.9.0-1.0.13"
 }
 
 android {
@@ -87,4 +88,12 @@ dependencies {
     
     // Add JSoup for HTML parsing
     implementation("org.jsoup:jsoup:1.16.1")
+    
+    // Calendar and Date/Time handling
+    implementation("com.kizitonwose.calendar:compose:2.5.0")
+    
+    // Room for local database storage
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
 }

@@ -1,14 +1,18 @@
 package com.example.fullcrossapplication.viewmodels
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fullcrossapplication.data.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
-class BibleViewModel : ViewModel() {
+class BibleViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = BibleRepository()
+    private val noteDao = AppDatabase.getDatabase(application).noteDao()
 
     private val _bibles = MutableStateFlow<List<Bible>>(emptyList())
     val bibles = _bibles.asStateFlow()
@@ -33,6 +37,9 @@ class BibleViewModel : ViewModel() {
 
     private val _selectedBook = MutableStateFlow<Book?>(null)
     val selectedBook = _selectedBook.asStateFlow()
+
+    private val _selectedVerse = MutableStateFlow<String?>(null)
+    val selectedVerse = _selectedVerse.asStateFlow()
 
     init {
         loadBibles()
@@ -126,5 +133,23 @@ class BibleViewModel : ViewModel() {
 
     fun setSelectedBook(book: Book?) {
         _selectedBook.value = book
+    }
+
+    fun setSelectedVerse(verse: String) {
+        _selectedVerse.value = verse
+    }
+
+    fun addVerseNote(title: String, content: String, verseReference: String) {
+        viewModelScope.launch {
+            val note = Note(
+                date = LocalDate.now(),
+                title = title,
+                content = content,
+                verseReference = verseReference,
+                type = NoteType.VERSE
+            )
+            noteDao.insertNote(note)
+            _selectedVerse.value = null // Reset selected verse after adding note
+        }
     }
 } 
