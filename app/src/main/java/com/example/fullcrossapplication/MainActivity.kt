@@ -7,11 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.fullcrossapplication.ui.theme.FullCrossApplicationTheme
@@ -25,19 +21,49 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    var showSplash by remember { mutableStateOf(true) }
+                    var currentScreen by remember { mutableStateOf(Screen.Splash) }
                     
-                    if (showSplash) {
-                        SplashScreen {
-                            showSplash = false
+                    when (currentScreen) {
+                        Screen.Splash -> {
+                            SplashScreen {
+                                currentScreen = Screen.Login
+                            }
                         }
-                    } else {
-                        Greeting("Android")
+                        Screen.Login -> {
+                            LoginScreen(
+                                onLoginSuccess = {
+                                    currentScreen = Screen.Main
+                                },
+                                onSignUpClick = {
+                                    currentScreen = Screen.SignUp
+                                }
+                            )
+                        }
+                        Screen.SignUp -> {
+                            SignUpScreen(
+                                onSignUpSuccess = {
+                                    currentScreen = Screen.Main
+                                },
+                                onBackToLogin = {
+                                    currentScreen = Screen.Login
+                                }
+                            )
+                        }
+                        Screen.Main -> {
+                            Greeting("Android")
+                        }
                     }
                 }
             }
         }
     }
+}
+
+enum class Screen {
+    Splash,
+    Login,
+    SignUp,
+    Main
 }
 
 @Composable
