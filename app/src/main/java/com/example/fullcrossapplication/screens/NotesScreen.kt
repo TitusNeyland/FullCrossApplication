@@ -1,30 +1,48 @@
 package com.example.fullcrossapplication.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fullcrossapplication.data.Note
 import com.example.fullcrossapplication.data.NoteType
 import com.example.fullcrossapplication.viewmodels.NotesViewModel
-import com.kizitonwose.calendar.compose.WeekCalendar
-import com.kizitonwose.calendar.compose.weekcalendar.rememberWeekCalendarState
-import com.kizitonwose.calendar.core.WeekDay
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.temporal.WeekFields
-import java.util.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.CircleShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,58 +51,43 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val notes by viewModel.notes.collectAsStateWithLifecycle()
     val datesWithNotes by viewModel.datesWithNotes.collectAsStateWithLifecycle()
+    var expandedDate by remember { mutableStateOf<LocalDate?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Calendar
-        WeekCalendar(
-            state = rememberWeekCalendarState(
-                startDate = LocalDate.now().minusDays(14),
-                endDate = LocalDate.now().plusDays(14),
-                firstVisibleWeekDate = LocalDate.now(),
-            ),
-            dayContent = { weekDay ->
-                Day(
-                    date = weekDay.date,
-                    selectedDate = selectedDate,
-                    hasNote = datesWithNotes.contains(weekDay.date),
-                    onClick = { date ->
-                        viewModel.setSelectedDate(date)
-                    }
-                )
-            },
-            modifier = Modifier.padding(vertical = 8.dp)
+        // Header
+        TopAppBar(
+            title = { Text("Your Notes") },
+            actions = {
+                IconButton(onClick = { showAddNoteDialog = true }) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Note")
+                }
+            }
         )
 
-        // Notes for selected date
+        // Dates List
         LazyColumn(
             modifier = Modifier
-                .weight(1f)
+                .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            item {
-                Text(
-                    text = selectedDate.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(vertical = 8.dp)
+            items(datesWithNotes.toList().sortedDescending()) { date ->
+                DateCard(
+                    date = date,
+                    isExpanded = date == expandedDate,
+                    notes = if (date == expandedDate) notes else emptyList(),
+                    onExpandClick = {
+                        if (expandedDate == date) {
+                            expandedDate = null
+                        } else {
+                            expandedDate = date
+                            viewModel.setSelectedDate(date)
+                        }
+                    },
+                    onDeleteNote = { note ->
+                        viewModel.deleteNote(note)
+                    }
                 )
             }
-
-            items(notes) { note ->
-                NoteCard(
-                    note = note,
-                    onDelete = { viewModel.deleteNote(note) }
-                )
-            }
-        }
-
-        // FAB for adding new notes
-        FloatingActionButton(
-            onClick = { showAddNoteDialog = true },
-            modifier = Modifier
-                .padding(16.dp)
-                .align(Alignment.End)
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Add Note")
         }
     }
 
@@ -100,62 +103,13 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
 }
 
 @Composable
-private fun Day(
+private fun DateCard(
     date: LocalDate,
-    selectedDate: LocalDate,
-    hasNote: Boolean,
-    onClick: (LocalDate) -> Unit
+    isExpanded: Boolean,
+    notes: List<Note>,
+    onExpandClick: () -> Unit,
+    onDeleteNote: (Note) -> Unit
 ) {
-    Surface(
-        modifier = Modifier
-            .padding(2.dp)
-            .size(40.dp),
-        color = if (date == selectedDate) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.surface
-        },
-        shape = MaterialTheme.shapes.small,
-        onClick = { onClick(date) }
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = date.dayOfMonth.toString(),
-                color = if (date == selectedDate) {
-                    MaterialTheme.colorScheme.onPrimary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                }
-            )
-            
-            // Note indicator
-            if (hasNote) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 2.dp)
-                        .size(4.dp)
-                        .background(
-                            color = if (date == selectedDate) {
-                                MaterialTheme.colorScheme.onPrimary
-                            } else {
-                                MaterialTheme.colorScheme.primary
-                            },
-                            shape = CircleShape
-                        )
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun NoteCard(note: Note, onDelete: () -> Unit) {
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -165,34 +119,79 @@ private fun NoteCard(note: Note, onDelete: () -> Unit) {
         tonalElevation = 1.dp
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.animateContentSize()
         ) {
+            // Date Header
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onExpandClick)
+                    .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = note.title,
+                    text = date.format(DateTimeFormatter.ofPattern("MMMM d, yyyy")),
                     style = MaterialTheme.typography.titleMedium
                 )
-                IconButton(onClick = { showDeleteDialog = true }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete Note")
-                }
-            }
-            if (note.verseReference != null) {
-                Text(
-                    text = "Verse: ${note.verseReference}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand"
                 )
             }
+
+            // Notes List (only shown when expanded)
+            if (isExpanded) {
+                notes.forEach { note ->
+                    Divider()
+                    NoteItem(
+                        note = note,
+                        onDelete = { onDeleteNote(note) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NoteItem(
+    note: Note,
+    onDelete: () -> Unit
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = note.content,
+                text = note.title,
+                style = MaterialTheme.typography.titleMedium
+            )
+            IconButton(onClick = { showDeleteDialog = true }) {
+                Icon(Icons.Default.Delete, contentDescription = "Delete Note")
+            }
+        }
+        if (note.verseReference != null) {
+            Text(
+                text = "Verse: ${note.verseReference}",
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 8.dp)
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
+        Text(
+            text = note.content,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 8.dp)
+        )
     }
 
     if (showDeleteDialog) {
@@ -205,7 +204,6 @@ private fun NoteCard(note: Note, onDelete: () -> Unit) {
         )
     }
 }
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
