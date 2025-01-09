@@ -37,9 +37,8 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
     val currentChapter by viewModel.currentChapter.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-
-    var selectedBible by remember { mutableStateOf<Bible?>(null) }
-    var selectedBook by remember { mutableStateOf<Book?>(null) }
+    val selectedBible by viewModel.selectedBible.collectAsStateWithLifecycle()
+    val selectedBook by viewModel.selectedBook.collectAsStateWithLifecycle()
     var searchQuery by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -62,13 +61,12 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                             when {
                                 currentChapter != null -> {
                                     viewModel.clearChapter()
-                                    selectedBook = null
                                 }
                                 selectedBook != null -> {
-                                    selectedBook = null
+                                    viewModel.setSelectedBook(null)
                                 }
                                 selectedBible != null -> {
-                                    selectedBible = null
+                                    viewModel.setSelectedBible(null)
                                 }
                             }
                         }
@@ -155,7 +153,7 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                     LazyColumn {
                         items(books) { book ->
                             BookItem(book) {
-                                selectedBook = it
+                                viewModel.setSelectedBook(it)
                                 viewModel.loadChapter(selectedBible!!.id, "${it.id}.1")
                             }
                         }
@@ -188,7 +186,7 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                                         bible.language.name.contains(searchQuery, ignoreCase = true)
                             }) { bible ->
                                 BibleItem(bible) {
-                                    selectedBible = it
+                                    viewModel.setSelectedBible(it)
                                     viewModel.loadBooks(it.id)
                                 }
                             }

@@ -28,6 +28,12 @@ class BibleViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 
+    private val _selectedBible = MutableStateFlow<Bible?>(null)
+    val selectedBible = _selectedBible.asStateFlow()
+
+    private val _selectedBook = MutableStateFlow<Book?>(null)
+    val selectedBook = _selectedBook.asStateFlow()
+
     init {
         loadBibles()
     }
@@ -111,5 +117,14 @@ class BibleViewModel : ViewModel() {
     fun clearChapter() {
         _currentChapter.value = null
         _currentChapterNumber.value = null
+        _selectedBook.value = null
+    }
+
+    fun setSelectedBible(bible: Bible?) {
+        _selectedBible.value = bible
+    }
+
+    fun setSelectedBook(book: Book?) {
+        _selectedBook.value = book
     }
 } 
