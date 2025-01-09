@@ -19,6 +19,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
+import androidx.compose.ui.unit.sp
+import com.example.fullcrossapplication.utils.BibleTextFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,13 +82,26 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp)
+                            .padding(horizontal = 16.dp)
                     ) {
                         item {
-                            Text(
-                                text = currentChapter!!.content,
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                            Column {
+                                // Chapter title
+                                Text(
+                                    text = "${selectedBook?.name} Chapter ${currentChapter!!.number}",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    modifier = Modifier.padding(vertical = 16.dp)
+                                )
+
+                                // Chapter content
+                                Text(
+                                    text = BibleTextFormatter.formatBibleText(currentChapter!!.content),
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        lineHeight = 28.sp
+                                    ),
+                                    modifier = Modifier.padding(bottom = 16.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -175,4 +190,4 @@ private fun BookItem(book: Book, onClick: (Book) -> Unit) {
             style = MaterialTheme.typography.titleMedium
         )
     }
-} 
+}
