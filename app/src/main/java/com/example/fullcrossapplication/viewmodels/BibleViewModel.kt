@@ -19,6 +19,9 @@ class BibleViewModel : ViewModel() {
     private val _currentChapter = MutableStateFlow<Chapter?>(null)
     val currentChapter = _currentChapter.asStateFlow()
 
+    private val _currentChapterNumber = MutableStateFlow<Int?>(null)
+    val currentChapterNumber = _currentChapterNumber.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
@@ -60,6 +63,25 @@ class BibleViewModel : ViewModel() {
             try {
                 _isLoading.value = true
                 _currentChapter.value = repository.getChapter(bibleId, chapterId).data
+                _currentChapterNumber.value = _currentChapter.value?.number?.toIntOrNull()
+            } catch (e: Exception) {
+                _error.value = e.message
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun loadNextChapter(bibleId: String) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                val currentNumber = _currentChapterNumber.value
+                if (currentNumber != null) {
+                    val nextChapterId = "${_books.value.firstOrNull()?.id}.${currentNumber + 1}"
+                    _currentChapter.value = repository.getChapter(bibleId, nextChapterId).data
+                    _currentChapterNumber.value = currentNumber + 1
+                }
             } catch (e: Exception) {
                 _error.value = e.message
             } finally {
@@ -70,5 +92,6 @@ class BibleViewModel : ViewModel() {
 
     fun clearChapter() {
         _currentChapter.value = null
+        _currentChapterNumber.value = null
     }
 } 

@@ -21,6 +21,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.ui.unit.sp
 import com.example.fullcrossapplication.utils.BibleTextFormatter
+import androidx.compose.material.icons.filled.NavigateNext
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,12 +89,34 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                     ) {
                         item {
                             Column {
-                                // Chapter title
-                                Text(
-                                    text = "${selectedBook?.name} Chapter ${currentChapter!!.number}",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    modifier = Modifier.padding(vertical = 16.dp)
-                                )
+                                // Add a row for the title and next chapter button
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // Chapter title
+                                    Text(
+                                        text = "${selectedBook?.name} Chapter ${currentChapter!!.number}",
+                                        style = MaterialTheme.typography.titleLarge
+                                    )
+
+                                    // Next Chapter button
+                                    IconButton(
+                                        onClick = {
+                                            selectedBible?.let { bible ->
+                                                viewModel.loadNextChapter(bible.id)
+                                            }
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.NavigateNext,
+                                            contentDescription = "Next Chapter"
+                                        )
+                                    }
+                                }
 
                                 // Chapter content
                                 Text(
