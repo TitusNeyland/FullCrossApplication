@@ -23,6 +23,8 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.temporal.WeekFields
 import java.util.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,6 +32,7 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
     var showAddNoteDialog by remember { mutableStateOf(false) }
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val notes by viewModel.notes.collectAsStateWithLifecycle()
+    val datesWithNotes by viewModel.datesWithNotes.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Calendar
@@ -40,9 +43,14 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
                 firstVisibleWeekDate = LocalDate.now(),
             ),
             dayContent = { weekDay ->
-                Day(weekDay.date, selectedDate) { date ->
-                    viewModel.setSelectedDate(date)
-                }
+                Day(
+                    date = weekDay.date,
+                    selectedDate = selectedDate,
+                    hasNote = datesWithNotes.contains(weekDay.date),
+                    onClick = { date ->
+                        viewModel.setSelectedDate(date)
+                    }
+                )
             },
             modifier = Modifier.padding(vertical = 8.dp)
         )
@@ -95,6 +103,7 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
 private fun Day(
     date: LocalDate,
     selectedDate: LocalDate,
+    hasNote: Boolean,
     onClick: (LocalDate) -> Unit
 ) {
     Surface(
@@ -121,12 +130,32 @@ private fun Day(
                     MaterialTheme.colorScheme.onSurface
                 }
             )
+            
+            // Note indicator
+            if (hasNote) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 2.dp)
+                        .size(4.dp)
+                        .background(
+                            color = if (date == selectedDate) {
+                                MaterialTheme.colorScheme.onPrimary
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                            shape = CircleShape
+                        )
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun NoteCard(note: Note, onDelete: () -> Unit) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -147,7 +176,7 @@ private fun NoteCard(note: Note, onDelete: () -> Unit) {
                     text = note.title,
                     style = MaterialTheme.typography.titleMedium
                 )
-                IconButton(onClick = onDelete) {
+                IconButton(onClick = { showDeleteDialog = true }) {
                     Icon(Icons.Default.Delete, contentDescription = "Delete Note")
                 }
             }
@@ -165,7 +194,18 @@ private fun NoteCard(note: Note, onDelete: () -> Unit) {
             )
         }
     }
+
+    if (showDeleteDialog) {
+        DeleteConfirmationDialog(
+            onConfirm = {
+                showDeleteDialog = false
+                onDelete()
+            },
+            onDismiss = { showDeleteDialog = false }
+        )
+    }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -236,6 +276,33 @@ private fun AddNoteDialog(
                 }
             ) {
                 Text("Add")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun DeleteConfirmationDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete Note") },
+        text = { Text("Are you sure you want to delete this note?") },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text("Delete")
             }
         },
         dismissButton = {

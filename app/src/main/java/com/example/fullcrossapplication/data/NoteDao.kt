@@ -20,4 +20,7 @@ interface NoteDao {
 
     @Delete
     suspend fun deleteNote(note: Note)
+
+    @Query("SELECT DISTINCT date FROM notes")
+    fun getDatesWithNotes(): Flow<List<LocalDate>>
 } 

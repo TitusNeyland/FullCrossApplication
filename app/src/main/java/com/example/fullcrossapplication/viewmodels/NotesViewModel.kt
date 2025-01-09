@@ -21,8 +21,12 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
     private val _notes = MutableStateFlow<List<Note>>(emptyList())
     val notes = _notes.asStateFlow()
 
+    private val _datesWithNotes = MutableStateFlow<Set<LocalDate>>(emptySet())
+    val datesWithNotes = _datesWithNotes.asStateFlow()
+
     init {
         loadNotesForDate(LocalDate.now())
+        loadDatesWithNotes()
     }
 
     fun setSelectedDate(date: LocalDate) {
@@ -54,6 +58,14 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteNote(note: Note) {
         viewModelScope.launch {
             noteDao.deleteNote(note)
+        }
+    }
+
+    private fun loadDatesWithNotes() {
+        viewModelScope.launch {
+            noteDao.getDatesWithNotes().collect { dates ->
+                _datesWithNotes.value = dates.toSet()
+            }
         }
     }
 } 
