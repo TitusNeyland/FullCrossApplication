@@ -24,6 +24,10 @@ import com.example.fullcrossapplication.utils.BibleTextFormatter
 import androidx.compose.material.icons.filled.NavigateNext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material.icons.filled.NavigateBefore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +40,7 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
 
     var selectedBible by remember { mutableStateOf<Bible?>(null) }
     var selectedBook by remember { mutableStateOf<Book?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Top Navigation Bar
@@ -97,6 +102,21 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    // Previous Chapter button
+                                    IconButton(
+                                        onClick = {
+                                            selectedBible?.let { bible ->
+                                                viewModel.loadPreviousChapter(bible.id)
+                                            }
+                                        },
+                                        enabled = viewModel.currentChapterNumber.collectAsStateWithLifecycle().value?.let { it > 1 } ?: false
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.NavigateBefore,
+                                            contentDescription = "Previous Chapter"
+                                        )
+                                    }
+
                                     // Chapter title
                                     Text(
                                         text = "${selectedBook?.name} Chapter ${currentChapter!!.number}",
@@ -143,11 +163,34 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                 }
                 // Show bible versions
                 else -> {
-                    LazyColumn {
-                        items(bibles) { bible ->
-                            BibleItem(bible) {
-                                selectedBible = it
-                                viewModel.loadBooks(it.id)
+                    Column {
+                        // Add search field
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            placeholder = { Text("Search Bible versions...") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Search,
+                                    contentDescription = "Search"
+                                )
+                            },
+                            singleLine = true
+                        )
+
+                        // Filter bibles based on search query
+                        LazyColumn {
+                            items(bibles.filter { bible ->
+                                searchQuery.isEmpty() || bible.name.contains(searchQuery, ignoreCase = true) ||
+                                        bible.language.name.contains(searchQuery, ignoreCase = true)
+                            }) { bible ->
+                                BibleItem(bible) {
+                                    selectedBible = it
+                                    viewModel.loadBooks(it.id)
+                                }
                             }
                         }
                     }

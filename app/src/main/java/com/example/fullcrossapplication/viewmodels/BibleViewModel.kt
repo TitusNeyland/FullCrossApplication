@@ -90,6 +90,24 @@ class BibleViewModel : ViewModel() {
         }
     }
 
+    fun loadPreviousChapter(bibleId: String) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                val currentNumber = _currentChapterNumber.value
+                if (currentNumber != null && currentNumber > 1) {
+                    val previousChapterId = "${_books.value.firstOrNull()?.id}.${currentNumber - 1}"
+                    _currentChapter.value = repository.getChapter(bibleId, previousChapterId).data
+                    _currentChapterNumber.value = currentNumber - 1
+                }
+            } catch (e: Exception) {
+                _error.value = e.message
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
     fun clearChapter() {
         _currentChapter.value = null
         _currentChapterNumber.value = null
