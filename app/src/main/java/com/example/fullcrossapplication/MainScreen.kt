@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.fullcrossapplication.screens.DonateScreen
 import com.example.fullcrossapplication.screens.ReadScreen
+import com.example.fullcrossapplication.screens.NotesScreen
 
 enum class BottomNavItem(val title: String, val icon: ImageVector) {
     Read("Read", Icons.Default.Book),
@@ -57,7 +58,7 @@ fun MainScreen() {
         ) {
             when (selectedItem) {
                 BottomNavItem.Read -> ReadScreen()
-                BottomNavItem.Notes -> Text("Notes Screen")
+                BottomNavItem.Notes -> NotesScreen()
                 BottomNavItem.Watch -> Text("Watch Screen")
                 BottomNavItem.Donate -> DonateScreen()
                 BottomNavItem.Account -> Text("Account Screen")
