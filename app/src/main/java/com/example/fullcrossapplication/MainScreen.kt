@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.fullcrossapplication.screens.DonateScreen
+import com.example.fullcrossapplication.screens.ReadScreen
 
 enum class BottomNavItem(val title: String, val icon: ImageVector) {
     Read("Read", Icons.Default.Book),
@@ -55,7 +56,7 @@ fun MainScreen() {
                 .padding(paddingValues)
         ) {
             when (selectedItem) {
-                BottomNavItem.Read -> Text("Read Screen")
+                BottomNavItem.Read -> ReadScreen()
                 BottomNavItem.Notes -> Text("Notes Screen")
                 BottomNavItem.Watch -> Text("Watch Screen")
                 BottomNavItem.Donate -> DonateScreen()
