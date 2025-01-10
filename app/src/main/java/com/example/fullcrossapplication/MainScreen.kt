@@ -26,6 +26,7 @@ import com.example.fullcrossapplication.screens.ReadScreen
 import com.example.fullcrossapplication.screens.NotesScreen
 import com.example.fullcrossapplication.screens.AccountScreen
 import com.example.fullcrossapplication.screens.LoginScreen
+import com.example.fullcrossapplication.screens.WatchScreen
 
 enum class BottomNavItem(val title: String, val icon: ImageVector) {
     Read("Read", Icons.Default.Book),
@@ -70,7 +71,7 @@ fun MainScreen() {
             when (selectedItem) {
                 BottomNavItem.Read -> ReadScreen()
                 BottomNavItem.Notes -> NotesScreen()
-                BottomNavItem.Watch -> Text("Watch Screen")
+                BottomNavItem.Watch -> WatchScreen()
                 BottomNavItem.Donate -> DonateScreen()
                 BottomNavItem.Account -> AccountScreen(
                     onLogout = { showLoginScreen = true }

@@ -23,6 +23,13 @@ interface BibleApi {
         @Path("bibleId") bibleId: String,
         @Path("chapterId") chapterId: String
     ): ChapterResponse
+
+    @GET("v1/bibles/{bibleId}/verses/{verseId}")
+    suspend fun getVerse(
+        @Header("api-key") apiKey: String,
+        @Path("bibleId") bibleId: String,
+        @Path("verseId") verseId: String
+    ): VerseResponse
 }
 
 data class BiblesResponse(
@@ -63,5 +70,16 @@ data class ChapterResponse(
 data class Chapter(
     val id: String,
     val number: String,
+    val content: String
+)
+
+data class VerseResponse(
+    val data: VerseData
+)
+
+data class VerseData(
+    val id: String,
+    val orgId: String,
+    val reference: String,
     val content: String
 ) 
