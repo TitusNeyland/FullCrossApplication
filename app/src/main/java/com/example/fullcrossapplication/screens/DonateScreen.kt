@@ -4,6 +4,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,121 +15,232 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
 import com.example.fullcrossapplication.R
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 data class PaymentMethod(
     val name: String,
     val icon: Int,
-    val handle: String
+    val handle: String,
+    val description: String = "",
+    val deepLink: String? = null
 )
 
 @Composable
 fun DonateScreen() {
+    val context = LocalContext.current
+    
     val paymentMethods = listOf(
-        PaymentMethod("PayPal", R.drawable.ic_paypal, "@fullcrossministries"),
-        PaymentMethod("Cash App", R.drawable.ic_cashapp, "fullcrossmin"),
-        // Add more payment methods as needed
+        PaymentMethod(
+            name = "PayPal",
+            icon = R.drawable.ic_paypal,
+            handle = "church@fullcrossministries.org",
+            description = "Send via PayPal to support our ministry",
+            deepLink = "https://www.paypal.com/myaccount/transfer/homepage/buy/preview"
+        ),
+        PaymentMethod(
+            name = "Cash App",
+            icon = R.drawable.ic_cashapp,
+            handle = "@FullCross",
+            description = "Quick and easy donations through Cash App",
+            deepLink = "https://cash.app/\$FullCross"
+        ),
+        PaymentMethod(
+            name = "Venmo",
+            icon = R.drawable.ic_venmo,
+            handle = "@Titus-Neyland",
+            description = "Send your donation through Venmo",
+            deepLink = "venmo://paycharge?txn=pay&recipients=Titus-Neyland"
+        ),
+        PaymentMethod(
+            name = "Zelle",
+            icon = R.drawable.ic_zelle,
+            handle = "donate@fullcross.org",
+            description = "Direct bank transfer through Zelle"
+        ),
+        PaymentMethod(
+            name = "Apple Pay",
+            icon = R.drawable.ic_apple_pay,
+            handle = "donate@fullcross.org",
+            description = "Quick payment using Apple Pay"
+        ),
+        PaymentMethod(
+            name = "Givelify",
+            icon = R.drawable.ic_givlify,
+            handle = "Full Cross Ministries",
+            description = "Support us through Givelify platform",
+            deepLink = "https://www.givelify.com/donate/MTUxNDM5OQ==/selection"
+        )
     )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Header
         Text(
             text = "Support Our Ministry",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Description
         Text(
-            text = "Your generous donations help us spread the word of God and support our community. " +
-                   "Choose your preferred payment method below:",
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            text = "Your generous donations help us spread the Gospel and support our community.",
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp),
+            textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Payment Methods
         paymentMethods.forEach { method ->
             PaymentMethodCard(method)
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // Additional Information
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Other Ways to Give",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "For other donation methods or any questions about giving, " +
-                           "please contact us at donations@fullcrossministries.org",
-                    textAlign = TextAlign.Center
-                )
-            }
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PaymentMethodCard(method: PaymentMethod) {
+private fun PaymentMethodCard(paymentMethod: PaymentMethod) {
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        onClick = { /* Handle payment method click */ }
+        onClick = {
+            when (paymentMethod.name) {
+                "Cash App" -> if (paymentMethod.deepLink != null) {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(paymentMethod.deepLink))
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            "Please install Cash App to proceed with payment",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                "PayPal" -> {
+                    try {
+                        val uri = Uri.parse("paypal://").buildUpon()
+                            .appendPath("send")
+                            .appendPath("church@fullcrossministries.org")
+                            .build()
+                        val intent = Intent(Intent.ACTION_VIEW, uri)
+                        
+                        // Try to start PayPal app first
+                        try {
+                            intent.setPackage("com.paypal.android.p2pmobile")
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // If PayPal app is not installed, open in browser
+                            val webIntent = Intent(Intent.ACTION_VIEW, 
+                                Uri.parse("https://paypal.me/fullcrossministries"))
+                            context.startActivity(webIntent)
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            "Unable to open PayPal",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                "Venmo" -> {
+                    try {
+                        // Try to open Venmo app first
+                        val uri = Uri.parse("venmo://paycharge?txn=pay&recipients=Titus-Neyland")
+                        val intent = Intent(Intent.ACTION_VIEW, uri)
+                        intent.setPackage("com.venmo")
+                        
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // If Venmo app is not installed, open in browser
+                            val webIntent = Intent(Intent.ACTION_VIEW, 
+                                Uri.parse("https://venmo.com/Titus-Neyland"))
+                            context.startActivity(webIntent)
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            "Unable to open Venmo",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                "Givelify" -> {
+                    try {
+                        // Try to open Givelify app first
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(paymentMethod.deepLink))
+                        intent.setPackage("com.givelify.android")
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // If Givelify app is not installed, open in browser
+                            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse(paymentMethod.deepLink))
+                            context.startActivity(webIntent)
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            "Unable to open Givelify",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        }
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = method.icon),
-                    contentDescription = "${method.name} logo",
-                    modifier = Modifier.size(32.dp)
+            Icon(
+                painter = painterResource(id = paymentMethod.icon),
+                contentDescription = "${paymentMethod.name} icon",
+                modifier = Modifier.size(32.dp),
+                tint = Color.Unspecified
+            )
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = paymentMethod.name,
+                    style = MaterialTheme.typography.titleMedium
                 )
-                Column {
+                Text(
+                    text = paymentMethod.handle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (paymentMethod.description.isNotEmpty()) {
                     Text(
-                        text = method.name,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = method.handle,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = paymentMethod.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }
+            
             Icon(
-                painter = painterResource(id = R.drawable.ic_christian_cross),
-                contentDescription = "Donate",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "View details",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
