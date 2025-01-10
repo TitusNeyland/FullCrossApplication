@@ -34,4 +34,7 @@ class BibleRepository {
     
     suspend fun getChapter(bibleId: String, chapterId: String) = 
         api.getChapter(apiKey, bibleId, chapterId)
+    
+    suspend fun getVerse(bibleId: String, verseId: String) = 
+        api.getVerse(apiKey, bibleId, verseId)
 } 
