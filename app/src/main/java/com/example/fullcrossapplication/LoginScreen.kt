@@ -11,104 +11,113 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fullcrossapplication.viewmodels.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
-    onSignUpClick: () -> Unit
+    onSignUpClick: () -> Unit,
+    authViewModel: AuthViewModel = viewModel()
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var isError by remember { mutableStateOf(false) }
+    
+    val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
+    val error by authViewModel.error.collectAsStateWithLifecycle()
+    val isLoading by authViewModel.isLoading.collectAsStateWithLifecycle()
+
+    LaunchedEffect(currentUser) {
+        if (currentUser != null) {
+            onLoginSuccess()
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.Center
     ) {
-        Spacer(modifier = Modifier.height(48.dp))
-
-        // Logo
         Image(
             painter = painterResource(id = R.drawable.ic_christian_cross),
             contentDescription = "Christian Cross",
-            modifier = Modifier.size(100.dp)
+            modifier = Modifier
+                .size(120.dp)
+                .padding(bottom = 16.dp)
         )
-
         Text(
             text = stringResource(id = R.string.ministry_name),
-            fontSize = 24.sp,
-            color = MaterialTheme.colorScheme.primary
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = 32.dp)
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        // Show error message if there is one
+        if (error != null) {
+            Text(
+                text = error!!,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(bottom = 16.dp),
+                textAlign = TextAlign.Center
+            )
+        }
 
-        // Email field
         OutlinedTextField(
             value = email,
             onValueChange = { 
                 email = it
-                isError = false 
+                authViewModel.clearError() // Clear error when user starts typing
             },
             label = { Text("Email") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            isError = isError,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email
+            )
         )
 
-        // Password field
         OutlinedTextField(
             value = password,
             onValueChange = { 
                 password = it
-                isError = false 
+                authViewModel.clearError() // Clear error when user starts typing
             },
             label = { Text("Password") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
             visualTransformation = PasswordVisualTransformation(),
-            isError = isError,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password
+            )
         )
 
-        if (isError) {
-            Text(
-                text = "Invalid email or password",
-                color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.align(Alignment.Start)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Login button
         Button(
             onClick = {
-                if (validateCredentials(email, password)) {
-                    onLoginSuccess()
-                } else {
-                    isError = true
-                }
+                authViewModel.signIn(email, password)
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp)
+                .padding(vertical = 16.dp),
+            enabled = !isLoading && email.isNotBlank() && password.isNotBlank()
         ) {
-            Text("Login")
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            } else {
+                Text("Login")
+            }
         }
 
-        // Forgot password
-        TextButton(onClick = { /* Handle forgot password */ }) {
-            Text("Forgot Password?")
-        }
-
-        // Sign up
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
@@ -126,9 +135,4 @@ fun LoginScreen(
             }
         }
     }
-}
-
-private fun validateCredentials(email: String, password: String): Boolean {
-    // Add your validation logic here
-    return email.contains("@") && password.length >= 6
 } 

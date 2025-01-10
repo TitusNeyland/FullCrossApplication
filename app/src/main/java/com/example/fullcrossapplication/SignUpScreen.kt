@@ -1,6 +1,5 @@
 package com.example.fullcrossapplication
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -9,25 +8,36 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.fullcrossapplication.viewmodels.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(
     onSignUpSuccess: () -> Unit,
-    onBackToLogin: () -> Unit
+    onBackToLogin: () -> Unit,
+    authViewModel: AuthViewModel = viewModel()
 ) {
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    
+    val isLoading by authViewModel.isLoading.collectAsStateWithLifecycle()
+    val error by authViewModel.error.collectAsStateWithLifecycle()
+    
+    LaunchedEffect(authViewModel.currentUser.collectAsStateWithLifecycle().value) {
+        authViewModel.currentUser.collect { user ->
+            if (user != null) {
+                onSignUpSuccess()
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -35,142 +45,121 @@ fun SignUpScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.Center
     ) {
-        // Logo
-        Image(
-            painter = painterResource(id = R.drawable.ic_christian_cross),
-            contentDescription = "Christian Cross",
-            modifier = Modifier.size(80.dp)
-        )
-
         Text(
             text = "Create Account",
-            fontSize = 24.sp,
-            color = MaterialTheme.colorScheme.primary
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = 32.dp)
         )
 
         // First Name
         OutlinedTextField(
             value = firstName,
-            onValueChange = { 
-                firstName = it
-                errorMessage = null
-            },
+            onValueChange = { firstName = it },
             label = { Text("First Name") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            isError = errorMessage != null
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
         )
 
         // Last Name
         OutlinedTextField(
             value = lastName,
-            onValueChange = { 
-                lastName = it
-                errorMessage = null
-            },
+            onValueChange = { lastName = it },
             label = { Text("Last Name") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            isError = errorMessage != null
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
         )
 
         // Email
         OutlinedTextField(
             value = email,
-            onValueChange = { 
-                email = it
-                errorMessage = null
-            },
+            onValueChange = { email = it },
             label = { Text("Email") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            isError = errorMessage != null
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
         )
 
         // Password
         OutlinedTextField(
             value = password,
-            onValueChange = { 
-                password = it
-                errorMessage = null
-            },
+            onValueChange = { password = it },
             label = { Text("Password") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
             visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            isError = errorMessage != null
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
         )
 
         // Confirm Password
         OutlinedTextField(
             value = confirmPassword,
-            onValueChange = { 
-                confirmPassword = it
-                errorMessage = null
-            },
+            onValueChange = { confirmPassword = it },
             label = { Text("Confirm Password") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
             visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            isError = errorMessage != null
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp)
         )
 
         // Error message
-        errorMessage?.let {
+        if (error != null) {
             Text(
-                text = it,
+                text = error ?: "",
                 color = MaterialTheme.colorScheme.error,
-                modifier = Modifier.align(Alignment.Start)
+                modifier = Modifier.padding(bottom = 16.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Sign Up button
+        // Sign Up Button
         Button(
             onClick = {
-                val validationError = validateSignUpFields(
-                    firstName, lastName, email, password, confirmPassword
-                )
-                if (validationError == null) {
-                    onSignUpSuccess()
-                } else {
-                    errorMessage = validationError
+                if (validateInputs(firstName, lastName, email, password, confirmPassword)) {
+                    authViewModel.signUp(email, password, firstName, lastName)
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp)
+                .padding(bottom = 16.dp),
+            enabled = !isLoading
         ) {
-            Text("Sign Up")
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            } else {
+                Text("Sign Up")
+            }
         }
 
-        // Back to login
-        TextButton(onClick = onBackToLogin) {
-            Text("Already have an account? Login")
+        // Back to Login
+        TextButton(
+            onClick = onBackToLogin,
+            modifier = Modifier.padding(bottom = 16.dp)
+        ) {
+            Text("Already have an account? Log in")
         }
     }
 }
 
-private fun validateSignUpFields(
+private fun validateInputs(
     firstName: String,
     lastName: String,
     email: String,
     password: String,
     confirmPassword: String
-): String? {
+): Boolean {
     return when {
-        firstName.isBlank() -> "First name is required"
-        lastName.isBlank() -> "Last name is required"
-        email.isBlank() -> "Email is required"
-        !email.contains("@") -> "Invalid email format"
-        password.length < 6 -> "Password must be at least 6 characters"
-        password != confirmPassword -> "Passwords do not match"
-        else -> null
+        firstName.isBlank() -> false
+        lastName.isBlank() -> false
+        !email.contains("@") -> false
+        password.length < 6 -> false
+        password != confirmPassword -> false
+        else -> true
     }
 } 

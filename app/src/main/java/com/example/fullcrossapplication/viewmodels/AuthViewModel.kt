@@ -1,0 +1,75 @@
+package com.example.fullcrossapplication.viewmodels
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.fullcrossapplication.data.FirebaseRepository
+import com.example.fullcrossapplication.data.User
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+class AuthViewModel(
+    private val repository: FirebaseRepository = FirebaseRepository()
+) : ViewModel() {
+    private val _currentUser = MutableStateFlow<User?>(null)
+    val currentUser = _currentUser.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
+
+    private val _error = MutableStateFlow<String?>(null)
+    val error = _error.asStateFlow()
+
+    init {
+        checkCurrentUser()
+    }
+
+    private fun checkCurrentUser() {
+        viewModelScope.launch {
+            _currentUser.value = repository.getCurrentUser()
+        }
+    }
+
+    fun signUp(email: String, password: String, firstName: String, lastName: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            
+            repository.signUp(email, password, firstName, lastName)
+                .onSuccess { user ->
+                    _currentUser.value = user
+                }
+                .onFailure { exception ->
+                    _error.value = exception.message
+                }
+            
+            _isLoading.value = false
+        }
+    }
+
+    fun signIn(email: String, password: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            
+            repository.signIn(email, password)
+                .onSuccess { user ->
+                    _currentUser.value = user
+                }
+                .onFailure { exception ->
+                    _error.value = "Invalid email or password. Please try again."
+                }
+            
+            _isLoading.value = false
+        }
+    }
+
+    fun signOut() {
+        repository.signOut()
+        _currentUser.value = null
+    }
+
+    fun clearError() {
+        _error.value = null
+    }
+} 

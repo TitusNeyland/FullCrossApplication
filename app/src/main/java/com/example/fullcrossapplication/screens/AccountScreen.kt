@@ -13,13 +13,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.clickable
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.fullcrossapplication.viewmodels.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountScreen(
-    onLogout: () -> Unit = {}
+    onLogout: () -> Unit = {},
+    authViewModel: AuthViewModel = viewModel()
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
+    val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -45,13 +50,13 @@ fun AccountScreen(
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "Big Bitus",
+                    text = "${currentUser?.firstName} ${currentUser?.lastName}",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
                 )
                 Text(
-                    text = "bigbitus@email.com",
+                    text = currentUser?.email ?: "",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

@@ -27,6 +27,8 @@ import com.example.fullcrossapplication.screens.NotesScreen
 import com.example.fullcrossapplication.screens.AccountScreen
 import com.example.fullcrossapplication.screens.LoginScreen
 import com.example.fullcrossapplication.screens.WatchScreen
+import androidx.compose.material3.Button
+import androidx.compose.ui.unit.dp
 
 enum class BottomNavItem(val title: String, val icon: ImageVector) {
     Read("Read", Icons.Default.Book),
@@ -37,7 +39,9 @@ enum class BottomNavItem(val title: String, val icon: ImageVector) {
 }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    onSignOut: () -> Unit = {}
+) {
     var selectedItem by remember { mutableStateOf(BottomNavItem.Watch) }
     var showLoginScreen by remember { mutableStateOf(false) }
 
@@ -74,7 +78,7 @@ fun MainScreen() {
                 BottomNavItem.Watch -> WatchScreen()
                 BottomNavItem.Donate -> DonateScreen()
                 BottomNavItem.Account -> AccountScreen(
-                    onLogout = { showLoginScreen = true }
+                    onLogout = onSignOut
                 )
             }
         }
