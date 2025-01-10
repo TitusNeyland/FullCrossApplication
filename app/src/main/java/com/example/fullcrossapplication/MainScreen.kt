@@ -37,7 +37,7 @@ enum class BottomNavItem(val title: String, val icon: ImageVector) {
 
 @Composable
 fun MainScreen() {
-    var selectedItem by remember { mutableStateOf(BottomNavItem.Read) }
+    var selectedItem by remember { mutableStateOf(BottomNavItem.Watch) }
     var showLoginScreen by remember { mutableStateOf(false) }
 
     if (showLoginScreen) {
