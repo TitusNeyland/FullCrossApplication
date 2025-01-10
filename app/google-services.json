@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "454446154838",
+    "project_id": "fullcrossapplication",
+    "storage_bucket": "fullcrossapplication.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:454446154838:android:ef585ab5bc4fc30f1de7f7",
+        "android_client_info": {
+          "package_name": "com.example.fullcrossapplication"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9dkRBxXM4g_t7VKA5fWqNj6y76m7ew40"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

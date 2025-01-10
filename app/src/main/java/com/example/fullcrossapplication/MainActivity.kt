@@ -1,6 +1,7 @@
 package com.example.fullcrossapplication
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,11 +12,27 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.fullcrossapplication.ui.theme.FullCrossApplicationTheme
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.fullcrossapplication.viewmodels.AuthViewModel
+import com.google.firebase.FirebaseApp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Verify Firebase initialization
+        try {
+            FirebaseApp.initializeApp(this)
+            Log.d("Firebase", "Firebase initialized successfully")
+        } catch (e: Exception) {
+            Log.e("Firebase", "Firebase initialization failed", e)
+        }
+        
         setContent {
+            val authViewModel = viewModel<AuthViewModel>()
+            val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
+            
             FullCrossApplicationTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -23,6 +40,15 @@ class MainActivity : ComponentActivity() {
                 ) {
                     var currentScreen by remember { mutableStateOf(Screen.Splash) }
                     
+                    // Update screen based on authentication state
+                    LaunchedEffect(currentUser) {
+                        currentScreen = when {
+                            currentUser != null -> Screen.Main
+                            currentScreen == Screen.Splash -> Screen.Login
+                            else -> currentScreen
+                        }
+                    }
+
                     when (currentScreen) {
                         Screen.Splash -> {
                             SplashScreen {
@@ -50,7 +76,12 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         Screen.Main -> {
-                            MainScreen()
+                            MainScreen(
+                                onSignOut = {
+                                    authViewModel.signOut()
+                                    currentScreen = Screen.Login
+                                }
+                            )
                         }
                     }
                 }
