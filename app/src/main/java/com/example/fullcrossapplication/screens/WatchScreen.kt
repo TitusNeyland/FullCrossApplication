@@ -1,514 +1,407 @@
 package com.example.fullcrossapplication.screens
 
-import android.app.Application
-import android.view.ViewGroup
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.fullcrossapplication.viewmodels.ChatMessage
-import com.example.fullcrossapplication.viewmodels.ChatTab
-import com.example.fullcrossapplication.viewmodels.WatchViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.time.Instant
+import coil.compose.AsyncImage
+import com.example.fullcrossapplication.R
+import java.time.Duration
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import androidx.lifecycle.ViewModelProvider
 
+data class LiveStream(
+    val title: String,
+    val thumbnailUrl: String,
+    val startTime: LocalDateTime,
+    val durationMinutes: Long,
+    val viewerCount: Int,
+    val isLive: Boolean = false,
+    val facebookUrl: String = "https://www.facebook.com/profile.php?id=61555182075913" // Default Facebook URL
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WatchScreen(
-    viewModel: WatchViewModel = viewModel(
-        factory = ViewModelProvider.AndroidViewModelFactory.getInstance(
-            LocalContext.current.applicationContext as Application
-        )
-    )
-) {
-    val focusManager = LocalFocusManager.current
-    val verseOfDay by viewModel.verseOfDay.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
-    val viewerCount by viewModel.viewerCount.collectAsState()
-    val chatMessages by viewModel.chatMessages.collectAsState()
-    var chatMessage by remember { mutableStateOf("") }
-    var isReplyMode by remember { mutableStateOf(false) }
+fun WatchScreen() {
+    val viewerCount = 128 // Example viewer count
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Facebook Video Section with Viewer Count
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Header row with title and viewer count
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Latest Message",
-                        style = MaterialTheme.typography.headlineSmall,
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
                     )
-                    
-                    // Viewer count
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Visibility,
-                            contentDescription = "Viewers",
-                            tint = MaterialTheme.colorScheme.primary
+                )
+            )
+    ) {
+        // Enhanced Header
+        LargeTopAppBar(
+            title = {
+                Column {
+                    Text(
+                        "Watch Now",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "$viewerCount watching",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                    )
+                    Text(
+                        "View the latest live broadcast here",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
                 }
-                
-                // Facebook Video Player
-                AndroidView(
-                    factory = { context ->
-                        WebView(context).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT
-                            )
-                            settings.javaScriptEnabled = true
-                            settings.domStorageEnabled = true
-                            webViewClient = WebViewClient()
-                            loadUrl("https://www.facebook.com/plugins/video.php?href=https://fb.watch/x0XNoN63M6/&show_text=false")
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp)
+            },
+            colors = TopAppBarDefaults.largeTopAppBarColors(
+                containerColor = Color.Transparent
+            )
+        )
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Featured Live Stream
+            item {
+                FeaturedStreamCard(
+                    stream = LiveStream(
+                        title = "Sunday Morning Service",
+                        thumbnailUrl = "https://example.com/thumbnail.jpg",
+                        startTime = LocalDateTime.now(),
+                        durationMinutes = 60,
+                        viewerCount = viewerCount,
+                        isLive = true,
+                        facebookUrl = "https://www.facebook.com/100079371798055/videos/655144869785669"
+                    )
                 )
             }
-        }
 
-        // Live Chat Section
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                // Tab Row
-                val selectedTab by viewModel.selectedTab.collectAsState()
-                TabRow(
-                    selectedTabIndex = selectedTab.ordinal,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    ChatTab.values().forEach { tab ->
-                        Tab(
-                            selected = selectedTab == tab,
-                            onClick = { viewModel.setSelectedTab(tab) },
-                            text = { Text(tab.name) }
-                        )
-                    }
-                }
+            // Upcoming Streams Section
+            item {
+                Text(
+                    "Upcoming Services",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                when (selectedTab) {
-                    ChatTab.CHAT -> {
-                        // Chat Messages
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp)
-                                .heightIn(
-                                    min = 100.dp,
-                                    max = 300.dp
-                                )
-                        ) {
-                            items(chatMessages) { message ->
-                                ChatMessageItem(
-                                    message = message,
-                                    viewModel = viewModel,
-                                    onReplyStart = { isReplyMode = true },
-                                    onReplyEnd = { isReplyMode = false }
-                                )
-                            }
-                        }
-
-                        // Only show main chat input when not in reply mode
-                        if (!isReplyMode) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                OutlinedTextField(
-                                    value = chatMessage,
-                                    onValueChange = { chatMessage = it },
-                                    placeholder = { Text("Type a message...") },
-                                    modifier = Modifier.weight(1f),
-                                    singleLine = true
-                                )
-                                IconButton(
-                                    onClick = {
-                                        if (chatMessage.isNotBlank()) {
-                                            viewModel.sendChatMessage(chatMessage)
-                                            chatMessage = ""
-                                            focusManager.clearFocus()
-                                        }
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Send,
-                                        contentDescription = "Send message"
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    
-                    ChatTab.NOTES -> {
-                        val notes by viewModel.notes.collectAsState()
-                        val showNoteDialog by viewModel.showNoteDialog.collectAsState()
-
-                        // Notes List with Add Note Button
-                        Column(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            // Add Note Button
-                            OutlinedButton(
-                                onClick = { viewModel.showNoteDialog() },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "Add note"
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Add New Note")
-                            }
-
-                            // Notes List
-                            LazyColumn(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 8.dp)
-                                    .heightIn(
-                                        min = 100.dp,
-                                        max = 300.dp
-                                    )
-                            ) {
-                                items(notes) { note ->
-                                    Card(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                        )
-                                    ) {
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(8.dp)
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween
-                                            ) {
-                                                Text(
-                                                    text = note.title,
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                                Text(
-                                                    text = note.date.format(DateTimeFormatter.ofPattern("MM/dd")),
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                            Text(
-                                                text = note.content,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                modifier = Modifier.padding(top = 4.dp)
-                                            )
-                                            if (note.verseReference != null) {
-                                                Text(
-                                                    text = note.verseReference,
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.padding(top = 4.dp)
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Note Dialog
-                        if (showNoteDialog) {
-                            AddVerseNoteDialog(
-                                verseReference = "",  // Empty since this isn't tied to a verse
-                                onDismiss = { viewModel.hideNoteDialog() },
-                                onNoteAdded = { title, content ->
-                                    viewModel.onNoteAdded(title, content)
-                                }
-                            )
-                        }
-                    }
-                }
+            // Example upcoming streams
+            items(getUpcomingStreams()) { stream ->
+                UpcomingStreamCard(stream = stream)
             }
         }
-
-        // Placeholder for future video content
-        Text(
-            text = "Video content coming soon...",
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(top = 32.dp)
-        )
     }
 }
 
 @Composable
-private fun ChatMessageItem(
-    message: ChatMessage,
-    viewModel: WatchViewModel,
-    onReplyStart: () -> Unit,
-    onReplyEnd: () -> Unit
-) {
-    val dateFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
-    var showReplyInput by remember { mutableStateOf(false) }
-    var replyText by remember { mutableStateOf("") }
+private fun FeaturedStreamCard(stream: LiveStream) {
+    val context = LocalContext.current
     
-    Column(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .animateContentSize(),
+        shape = MaterialTheme.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        // Main message
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+        Box {
+            // Placeholder/Loading state
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = message.userName,
-                    style = MaterialTheme.typography.bodyMedium,
+                Icon(
+                    imageVector = Icons.Default.PlayCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                )
+            }
+
+            // Actual image
+            AsyncImage(
+                model = stream.thumbnailUrl,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentScale = ContentScale.Crop,
+                error = painterResource(id = R.drawable.ic_christian_cross) // Fallback image
+            )
+
+            // Live indicator
+            if (stream.isLive) {
+                Surface(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .align(Alignment.TopStart),
+                    shape = RoundedCornerShape(4.dp),
+                    color = MaterialTheme.colorScheme.error
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "LIVE",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = stream.title,
+                style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold
                 )
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Visibility,
+                    contentDescription = "Viewers",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = dateFormat.format(Date(message.timestamp)),
+                    text = "${stream.viewerCount} watching",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                Spacer(modifier = Modifier.width(16.dp))
+                
+                Icon(
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = "Duration",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "${stream.durationMinutes} min",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(stream.facebookUrl))
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            "Unable to open Facebook",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Join Stream")
+            }
+        }
+    }
+}
+
+@Composable
+private fun UpcomingStreamCard(stream: LiveStream) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(),
+        shape = MaterialTheme.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Time column
+            Column(
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier.width(72.dp)
+            ) {
+                Text(
+                    text = stream.startTime.format(DateTimeFormatter.ofPattern("h:mm a")),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+                Text(
+                    text = stream.startTime.format(DateTimeFormatter.ofPattern("EEE")),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Text(
-                text = message.message,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(vertical = 4.dp)
+
+            Divider(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .width(1.dp)
+                    .height(40.dp),
+                color = MaterialTheme.colorScheme.outlineVariant
             )
 
-            // Reactions
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Reaction buttons
-                val reactions = listOf("👍", "❤️", "😊", "🙏")
-                reactions.forEach { emoji ->
-                    val count = message.reactions[emoji] ?: 0
-                    ElevatedButton(
-                        onClick = { viewModel.addReaction(message.id, emoji) },
-                        contentPadding = PaddingValues(horizontal = 8.dp),
-                        modifier = Modifier.height(28.dp)
-                    ) {
-                        Text(
-                            text = "$emoji ${if (count > 0) count else ""}",
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
-            }
-
-            // Reply button
-            TextButton(
-                onClick = { showReplyInput = !showReplyInput },
-                modifier = Modifier.padding(top = 4.dp)
-            ) {
+            // Content column
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (showReplyInput) "Cancel" else "Reply",
-                    style = MaterialTheme.typography.bodySmall
+                    text = stream.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "${stream.durationMinutes} min",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // Reply input
-            if (showReplyInput) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = replyText,
-                        onValueChange = { replyText = it },
-                        placeholder = { Text("Write a reply...") },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true
-                    )
-                    IconButton(
-                        onClick = {
-                            if (replyText.isNotBlank()) {
-                                viewModel.addReply(message.id, replyText)
-                                replyText = ""
-                                showReplyInput = false
-                            }
-                        }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Send,
-                            contentDescription = "Send reply"
-                        )
-                    }
-                }
-            }
-
-            // Replies
-            if (message.replies.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, top = 8.dp)
-                ) {
-                    // Thread line
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 8.dp)
-                    ) {
-                        // Vertical thread line
-                        Box(
-                            modifier = Modifier
-                                .width(2.dp)
-                                .height((message.replies.size * 60).dp)
-                                .background(
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                                    shape = RoundedCornerShape(1.dp)
-                                )
-                                .align(Alignment.TopStart)
-                        )
-
-                        // Replies
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 16.dp)
-                        ) {
-                            message.replies.forEach { reply ->
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                                    )
-                                ) {
-                                    Column(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(8.dp)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = reply.userName,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                            Text(
-                                                text = dateFormat.format(Date(reply.timestamp)),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                        Text(
-                                            text = reply.message,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            modifier = Modifier.padding(top = 4.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            IconButton(onClick = { /* Handle reminder */ }) {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = "Set reminder",
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
+}
 
-    // Effect to notify parent about reply state changes
-    LaunchedEffect(showReplyInput) {
-        if (showReplyInput) {
-            onReplyStart()
-        } else {
-            onReplyEnd()
-        }
+private fun getUpcomingStreams(): List<LiveStream> {
+    val now = LocalDateTime.now()
+    
+    // Get next Wednesday at 6 PM
+    val nextWednesday = now.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.WEDNESDAY))
+        .withHour(18)  // 6 PM
+        .withMinute(0)
+        .withSecond(0)
+
+    // Get next Sunday at 9 AM
+    val nextSunday = now.with(java.time.temporal.TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SUNDAY))
+        .withHour(9)   // 9 AM
+        .withMinute(0)
+        .withSecond(0)
+
+    return listOf(
+        LiveStream(
+            title = "Wednesday Bible Study",
+            thumbnailUrl = "https://example.com/thumbnail1.jpg",
+            startTime = nextWednesday,
+            durationMinutes = 50,
+            viewerCount = 0,
+            facebookUrl = "https://www.facebook.com/100079371798055/videos/655144869785669"
+        ),
+        LiveStream(
+            title = "Sunday Morning Service",
+            thumbnailUrl = "https://example.com/thumbnail2.jpg",
+            startTime = nextSunday,
+            durationMinutes = 50,
+            viewerCount = 0,
+            facebookUrl = "https://www.facebook.com/100079371798055/videos/655144869785669"
+        )
+    ).sortedBy { it.startTime }
+}
+
+private fun formatDuration(duration: Duration): String {
+    val hours = duration.toHours()
+    val minutes = (duration.toMinutes() % 60)
+    return when {
+        hours > 0 -> "${hours}h ${minutes}m"
+        else -> "${minutes}m"
     }
 } 
