@@ -9,10 +9,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import org.jsoup.Jsoup
 
 class BibleViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = BibleRepository()
     private val noteDao = AppDatabase.getDatabase(application).noteDao()
+
+    private val defaultBibleId = "de4e12af7f28f599-02" // English Standard Version (ESV)
 
     private val _bibles = MutableStateFlow<List<Bible>>(emptyList())
     val bibles = _bibles.asStateFlow()
@@ -41,8 +45,31 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedVerse = MutableStateFlow<String?>(null)
     val selectedVerse = _selectedVerse.asStateFlow()
 
+    private val _verseOfDay = MutableStateFlow<VerseOfDay?>(null)
+    val verseOfDay = _verseOfDay.asStateFlow()
+
+    private val _isLoadingVerse = MutableStateFlow(false)
+    val isLoadingVerse = _isLoadingVerse.asStateFlow()
+
+    private val _verseError = MutableStateFlow<String?>(null)
+    val verseError = _verseError.asStateFlow()
+
+    private val verseIds = listOf(
+        "JHN.3.16", // John 3:16
+        "PHP.4.13", // Philippians 4:13
+        "PRO.3.5",  // Proverbs 3:5
+        "PSA.23.1", // Psalm 23:1
+        "ROM.8.28", // Romans 8:28
+        "JER.29.11", // Jeremiah 29:11
+        "ISA.41.10", // Isaiah 41:10
+        "MAT.11.28", // Matthew 11:28
+        "JOS.1.9",   // Joshua 1:9
+        "HEB.11.1"   // Hebrews 11:1
+    )
+
     init {
         loadBibles()
+        fetchVerseOfDay()
     }
 
     private fun loadBibles() {
@@ -150,6 +177,36 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
             )
             noteDao.insertNote(note)
             _selectedVerse.value = null // Reset selected verse after adding note
+        }
+    }
+
+    fun refreshVerseOfDay() {
+        fetchVerseOfDay()
+    }
+
+    private fun fetchVerseOfDay() {
+        viewModelScope.launch {
+            _isLoadingVerse.value = true
+            _verseError.value = null
+            try {
+                val dayOfYear = LocalDate.now().dayOfYear
+                val verseId = verseIds[dayOfYear % verseIds.size]
+                
+                val response = repository.getVerse(defaultBibleId, verseId)
+                val verseData = response.data
+                
+                val plainText = Jsoup.parse(verseData.content).text()
+                
+                _verseOfDay.value = VerseOfDay(
+                    text = plainText,
+                    reference = verseData.reference,
+                    date = LocalDate.now().format(DateTimeFormatter.ISO_DATE)
+                )
+            } catch (e: Exception) {
+                _verseError.value = e.message ?: "Failed to fetch verse of the day"
+            } finally {
+                _isLoadingVerse.value = false
+            }
         }
     }
 } 

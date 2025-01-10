@@ -309,63 +309,6 @@ fun WatchScreen(
             }
         }
 
-        // Verse of the Day Section
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Verse of the Day",
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    IconButton(onClick = { viewModel.refreshVerse() }) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh verse"
-                        )
-                    }
-                }
-
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.padding(16.dp)
-                    )
-                } else if (error != null) {
-                    Text(
-                        text = error ?: "An error occurred",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(16.dp),
-                        textAlign = TextAlign.Center
-                    )
-                } else {
-                    verseOfDay?.let { verse ->
-                        Text(
-                            text = verse.text,
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(vertical = 16.dp),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "- ${verse.reference}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontStyle = FontStyle.Italic,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-            }
-        }
-
         // Placeholder for future video content
         Text(
             text = "Video content coming soon...",
