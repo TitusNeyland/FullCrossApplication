@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.fullcrossapplication.screens.DonateScreen
 import com.example.fullcrossapplication.screens.ReadScreen
 import com.example.fullcrossapplication.screens.NotesScreen
+import com.example.fullcrossapplication.screens.AccountScreen
+import com.example.fullcrossapplication.screens.LoginScreen
 
 enum class BottomNavItem(val title: String, val icon: ImageVector) {
     Read("Read", Icons.Default.Book),
@@ -36,6 +38,15 @@ enum class BottomNavItem(val title: String, val icon: ImageVector) {
 @Composable
 fun MainScreen() {
     var selectedItem by remember { mutableStateOf(BottomNavItem.Read) }
+    var showLoginScreen by remember { mutableStateOf(false) }
+
+    if (showLoginScreen) {
+        LoginScreen(
+            onLoginSuccess = { showLoginScreen = false },
+            onSignUpClick = { /* Handle sign up */ }
+        )
+        return
+    }
 
     Scaffold(
         bottomBar = {
@@ -61,7 +72,9 @@ fun MainScreen() {
                 BottomNavItem.Notes -> NotesScreen()
                 BottomNavItem.Watch -> Text("Watch Screen")
                 BottomNavItem.Donate -> DonateScreen()
-                BottomNavItem.Account -> Text("Account Screen")
+                BottomNavItem.Account -> AccountScreen(
+                    onLogout = { showLoginScreen = true }
+                )
             }
         }
     }
