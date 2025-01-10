@@ -4,6 +4,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -13,121 +15,134 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
 import com.example.fullcrossapplication.R
 
 data class PaymentMethod(
     val name: String,
     val icon: Int,
-    val handle: String
+    val handle: String,
+    val description: String = ""
 )
 
 @Composable
 fun DonateScreen() {
     val paymentMethods = listOf(
-        PaymentMethod("PayPal", R.drawable.ic_paypal, "@fullcrossministries"),
-        PaymentMethod("Cash App", R.drawable.ic_cashapp, "fullcrossmin"),
-        // Add more payment methods as needed
+        PaymentMethod(
+            name = "PayPal",
+            icon = R.drawable.ic_paypal,
+            handle = "@fullcrossministries",
+            description = "Send via PayPal to support our ministry"
+        ),
+        PaymentMethod(
+            name = "Cash App",
+            icon = R.drawable.ic_cashapp,
+            handle = "@fullcrossmin",
+            description = "Quick and easy donations through Cash App"
+        ),
+        PaymentMethod(
+            name = "Venmo",
+            icon = R.drawable.ic_venmo,
+            handle = "@fullcross-ministries",
+            description = "Send your donation through Venmo"
+        ),
+        PaymentMethod(
+            name = "Zelle",
+            icon = R.drawable.ic_zelle,
+            handle = "donate@fullcross.org",
+            description = "Direct bank transfer through Zelle"
+        ),
+        PaymentMethod(
+            name = "Apple Pay",
+            icon = R.drawable.ic_apple_pay,
+            handle = "donate@fullcross.org",
+            description = "Quick payment using Apple Pay"
+        ),
+        PaymentMethod(
+            name = "Givlify",
+            icon = R.drawable.ic_givlify,
+            handle = "fullcrossministries",
+            description = "Support us through Givlify platform"
+        )
     )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Header
         Text(
             text = "Support Our Ministry",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Description
         Text(
-            text = "Your generous donations help us spread the word of God and support our community. " +
-                   "Choose your preferred payment method below:",
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            text = "Your generous donations help us spread the Gospel and support our community.",
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp),
+            textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        // Payment Methods
         paymentMethods.forEach { method ->
             PaymentMethodCard(method)
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // Additional Information
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "Other Ways to Give",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "For other donation methods or any questions about giving, " +
-                           "please contact us at donations@fullcrossministries.org",
-                    textAlign = TextAlign.Center
-                )
-            }
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PaymentMethodCard(method: PaymentMethod) {
+private fun PaymentMethodCard(paymentMethod: PaymentMethod) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         onClick = { /* Handle payment method click */ }
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = method.icon),
-                    contentDescription = "${method.name} logo",
-                    modifier = Modifier.size(32.dp)
+            Icon(
+                painter = painterResource(id = paymentMethod.icon),
+                contentDescription = "${paymentMethod.name} icon",
+                modifier = Modifier.size(32.dp),
+                tint = Color.Unspecified
+            )
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = paymentMethod.name,
+                    style = MaterialTheme.typography.titleMedium
                 )
-                Column {
+                Text(
+                    text = paymentMethod.handle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (paymentMethod.description.isNotEmpty()) {
                     Text(
-                        text = method.name,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = method.handle,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = paymentMethod.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }
+            
             Icon(
-                painter = painterResource(id = R.drawable.ic_christian_cross),
-                contentDescription = "Donate",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "View details",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
