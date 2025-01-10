@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class AuthViewModel : ViewModel() {
-    private val repository = FirebaseRepository()
-
+class AuthViewModel(
+    private val repository: FirebaseRepository = FirebaseRepository()
+) : ViewModel() {
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser = _currentUser.asStateFlow()
 
@@ -57,7 +57,7 @@ class AuthViewModel : ViewModel() {
                     _currentUser.value = user
                 }
                 .onFailure { exception ->
-                    _error.value = exception.message
+                    _error.value = "Invalid email or password. Please try again."
                 }
             
             _isLoading.value = false
@@ -67,5 +67,9 @@ class AuthViewModel : ViewModel() {
     fun signOut() {
         repository.signOut()
         _currentUser.value = null
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 } 

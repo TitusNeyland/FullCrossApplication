@@ -40,20 +40,17 @@ class MainActivity : ComponentActivity() {
                 ) {
                     var currentScreen by remember { mutableStateOf(Screen.Splash) }
                     
-                    // Update screen based on authentication state
-                    LaunchedEffect(currentUser) {
-                        currentScreen = when {
-                            currentUser != null -> Screen.Main
-                            currentScreen == Screen.Splash -> Screen.Login
-                            else -> currentScreen
-                        }
-                    }
-
                     when (currentScreen) {
                         Screen.Splash -> {
-                            SplashScreen {
-                                currentScreen = Screen.Login
-                            }
+                            SplashScreen(
+                                onSplashScreenFinish = {
+                                    currentScreen = if (currentUser != null) {
+                                        Screen.Main
+                                    } else {
+                                        Screen.Login
+                                    }
+                                }
+                            )
                         }
                         Screen.Login -> {
                             LoginScreen(

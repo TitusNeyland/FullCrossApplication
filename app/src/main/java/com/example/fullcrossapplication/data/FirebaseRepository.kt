@@ -43,11 +43,11 @@ class FirebaseRepository {
             
             val userDoc = usersCollection.document(uid).get().await()
             val user = userDoc.toObject(User::class.java) 
-                ?: throw Exception("Failed to get user data")
+                ?: throw Exception("Failed to get user profile")
             
             Result.success(user)
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Sign in failed: ${e.message}"))
         }
     }
 
