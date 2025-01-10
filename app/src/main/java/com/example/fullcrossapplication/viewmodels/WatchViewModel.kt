@@ -1,8 +1,11 @@
 package com.example.fullcrossapplication.viewmodels
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fullcrossapplication.data.BibleRepository
+import com.example.fullcrossapplication.data.NoteType
 import com.example.fullcrossapplication.data.VerseOfDay
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,7 +15,13 @@ import org.jsoup.Jsoup
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-class WatchViewModel : ViewModel() {
+enum class ChatTab {
+    CHAT, NOTES
+}
+
+class WatchViewModel(
+    application: Application
+) : AndroidViewModel(application) {
     private val repository = BibleRepository()
     private val bibleId = "de4e12af7f28f599-02" // English Standard Version (ESV)
     
@@ -30,6 +39,16 @@ class WatchViewModel : ViewModel() {
 
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val chatMessages = _chatMessages.asStateFlow()
+
+    private val _selectedTab = MutableStateFlow(ChatTab.CHAT)
+    val selectedTab = _selectedTab.asStateFlow()
+
+    private val _showNoteDialog = MutableStateFlow(false)
+    val showNoteDialog = _showNoteDialog.asStateFlow()
+
+    private val notesViewModel = NotesViewModel(getApplication())
+
+    val notes = notesViewModel.notes
 
     // List of inspiring Bible verses
     private val verseIds = listOf(
@@ -128,6 +147,27 @@ class WatchViewModel : ViewModel() {
             }
         }
         _chatMessages.value = updatedMessages
+    }
+
+    fun setSelectedTab(tab: ChatTab) {
+        _selectedTab.value = tab
+    }
+
+    fun addNote(title: String, content: String, verseReference: String? = null, type: NoteType = NoteType.GENERAL) {
+        notesViewModel.addNote(title, content, verseReference, type)
+    }
+
+    fun showNoteDialog() {
+        _showNoteDialog.value = true
+    }
+
+    fun hideNoteDialog() {
+        _showNoteDialog.value = false
+    }
+
+    fun onNoteAdded(title: String, content: String) {
+        addNote(title, content)
+        hideNoteDialog()
     }
 }
 

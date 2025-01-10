@@ -307,7 +307,7 @@ private fun VerseItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddVerseNoteDialog(
+fun AddVerseNoteDialog(
     verseReference: String,
     onDismiss: () -> Unit,
     onNoteAdded: (String, String) -> Unit

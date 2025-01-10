@@ -1,5 +1,6 @@
 package com.example.fullcrossapplication.screens
 
+import android.app.Application
 import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -11,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Visibility
@@ -33,14 +35,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fullcrossapplication.viewmodels.ChatMessage
+import com.example.fullcrossapplication.viewmodels.ChatTab
 import com.example.fullcrossapplication.viewmodels.WatchViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import androidx.lifecycle.ViewModelProvider
 
 @Composable
 fun WatchScreen(
-    viewModel: WatchViewModel = viewModel()
+    viewModel: WatchViewModel = viewModel(
+        factory = ViewModelProvider.AndroidViewModelFactory.getInstance(
+            LocalContext.current.applicationContext as Application
+        )
+    )
 ) {
     val focusManager = LocalFocusManager.current
     val verseOfDay by viewModel.verseOfDay.collectAsState()
@@ -68,11 +80,36 @@ fun WatchScreen(
                 modifier = Modifier.padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "Latest Message",
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                // Header row with title and viewer count
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Latest Message",
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                    
+                    // Viewer count
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Visibility,
+                            contentDescription = "Viewers",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "$viewerCount watching",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
                 
                 // Facebook Video Player
                 AndroidView(
@@ -92,27 +129,6 @@ fun WatchScreen(
                         .fillMaxWidth()
                         .height(300.dp)
                 )
-
-                // Viewer Count
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Visibility,
-                        contentDescription = "Viewers",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "$viewerCount watching",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
             }
         }
 
@@ -125,56 +141,167 @@ fun WatchScreen(
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
-                Text(
-                    text = "Live Chat",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                // Chat Messages
-                LazyColumn(
-                    modifier = Modifier
-                        .height(300.dp)
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
+                // Tab Row
+                val selectedTab by viewModel.selectedTab.collectAsState()
+                TabRow(
+                    selectedTabIndex = selectedTab.ordinal,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    items(chatMessages) { message ->
-                        ChatMessageItem(
-                            message = message,
-                            viewModel = viewModel,
-                            onReplyStart = { isReplyMode = true },
-                            onReplyEnd = { isReplyMode = false }
+                    ChatTab.values().forEach { tab ->
+                        Tab(
+                            selected = selectedTab == tab,
+                            onClick = { viewModel.setSelectedTab(tab) },
+                            text = { Text(tab.name) }
                         )
                     }
                 }
 
-                // Only show main chat input when not in reply mode
-                if (!isReplyMode) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = chatMessage,
-                            onValueChange = { chatMessage = it },
-                            placeholder = { Text("Type a message...") },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true
-                        )
-                        IconButton(
-                            onClick = {
-                                if (chatMessage.isNotBlank()) {
-                                    viewModel.sendChatMessage(chatMessage)
-                                    chatMessage = ""
-                                    focusManager.clearFocus()
+                Spacer(modifier = Modifier.height(16.dp))
+
+                when (selectedTab) {
+                    ChatTab.CHAT -> {
+                        // Chat Messages
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 8.dp)
+                                .heightIn(
+                                    min = 100.dp,
+                                    max = 300.dp
+                                )
+                        ) {
+                            items(chatMessages) { message ->
+                                ChatMessageItem(
+                                    message = message,
+                                    viewModel = viewModel,
+                                    onReplyStart = { isReplyMode = true },
+                                    onReplyEnd = { isReplyMode = false }
+                                )
+                            }
+                        }
+
+                        // Only show main chat input when not in reply mode
+                        if (!isReplyMode) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedTextField(
+                                    value = chatMessage,
+                                    onValueChange = { chatMessage = it },
+                                    placeholder = { Text("Type a message...") },
+                                    modifier = Modifier.weight(1f),
+                                    singleLine = true
+                                )
+                                IconButton(
+                                    onClick = {
+                                        if (chatMessage.isNotBlank()) {
+                                            viewModel.sendChatMessage(chatMessage)
+                                            chatMessage = ""
+                                            focusManager.clearFocus()
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Send,
+                                        contentDescription = "Send message"
+                                    )
                                 }
                             }
+                        }
+                    }
+                    
+                    ChatTab.NOTES -> {
+                        val notes by viewModel.notes.collectAsState()
+                        val showNoteDialog by viewModel.showNoteDialog.collectAsState()
+
+                        // Notes List with Add Note Button
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Send,
-                                contentDescription = "Send message"
+                            // Add Note Button
+                            OutlinedButton(
+                                onClick = { viewModel.showNoteDialog() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Add note"
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Add New Note")
+                            }
+
+                            // Notes List
+                            LazyColumn(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp)
+                                    .heightIn(
+                                        min = 100.dp,
+                                        max = 300.dp
+                                    )
+                            ) {
+                                items(notes) { note ->
+                                    Card(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                        )
+                                    ) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(8.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Text(
+                                                    text = note.title,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                Text(
+                                                    text = note.date.format(DateTimeFormatter.ofPattern("MM/dd")),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                            Text(
+                                                text = note.content,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                modifier = Modifier.padding(top = 4.dp)
+                                            )
+                                            if (note.verseReference != null) {
+                                                Text(
+                                                    text = note.verseReference,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.padding(top = 4.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Note Dialog
+                        if (showNoteDialog) {
+                            AddVerseNoteDialog(
+                                verseReference = "",  // Empty since this isn't tied to a verse
+                                onDismiss = { viewModel.hideNoteDialog() },
+                                onNoteAdded = { title, content ->
+                                    viewModel.onNoteAdded(title, content)
+                                }
                             )
                         }
                     }
