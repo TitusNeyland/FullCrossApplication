@@ -1,5 +1,6 @@
 package com.example.fullcrossapplication.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,20 +16,10 @@ import com.example.fullcrossapplication.data.Book
 import com.example.fullcrossapplication.viewmodels.BibleViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.IconButton
-import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextAlign
 import com.example.fullcrossapplication.utils.BibleTextFormatter
-import androidx.compose.material.icons.filled.NavigateNext
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material.icons.filled.NavigateBefore
-import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,8 +34,15 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
     var searchQuery by remember { mutableStateOf("") }
     var showNoteDialog by remember { mutableStateOf(false) }
     val selectedVerse by viewModel.selectedVerse.collectAsStateWithLifecycle()
+    val verseOfDay by viewModel.verseOfDay.collectAsStateWithLifecycle()
+    val isLoadingVerse by viewModel.isLoadingVerse.collectAsStateWithLifecycle()
+    val verseError by viewModel.verseError.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
         // Top Navigation Bar
         CenterAlignedTopAppBar(
             title = {
@@ -221,17 +219,82 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
             }
         }
 
-        // Add note dialog
-        if (showNoteDialog && selectedVerse != null) {
-            AddVerseNoteDialog(
-                verseReference = selectedVerse!!,
-                onDismiss = { showNoteDialog = false },
-                onNoteAdded = { title, content ->
-                    viewModel.addVerseNote(title, content, selectedVerse!!)
-                    showNoteDialog = false
+        // Move Verse of the Day to bottom
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Verse of the Day",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    IconButton(
+                        onClick = { viewModel.refreshVerseOfDay() },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Refresh verse",
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
-            )
+
+                if (isLoadingVerse) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .padding(4.dp)
+                            .size(20.dp)
+                    )
+                } else if (verseError != null) {
+                    Text(
+                        text = verseError ?: "An error occurred",
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(4.dp),
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    verseOfDay?.let { verse ->
+                        Text(
+                            text = verse.text,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "- ${verse.reference}",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontStyle = FontStyle.Italic,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
+            }
         }
+    }
+
+    // Add note dialog
+    if (showNoteDialog && selectedVerse != null) {
+        AddVerseNoteDialog(
+            verseReference = selectedVerse!!,
+            onDismiss = { showNoteDialog = false },
+            onNoteAdded = { title, content ->
+                viewModel.addVerseNote(title, content, selectedVerse!!)
+                showNoteDialog = false
+            }
+        )
     }
 }
 
@@ -307,7 +370,7 @@ private fun VerseItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddVerseNoteDialog(
+fun AddVerseNoteDialog(
     verseReference: String,
     onDismiss: () -> Unit,
     onNoteAdded: (String, String) -> Unit

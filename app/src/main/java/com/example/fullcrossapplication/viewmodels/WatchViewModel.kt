@@ -1,9 +1,13 @@
 package com.example.fullcrossapplication.viewmodels
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fullcrossapplication.data.BibleRepository
+import com.example.fullcrossapplication.data.NoteType
 import com.example.fullcrossapplication.data.VerseOfDay
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -11,7 +15,13 @@ import org.jsoup.Jsoup
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-class WatchViewModel : ViewModel() {
+enum class ChatTab {
+    CHAT, NOTES
+}
+
+class WatchViewModel(
+    application: Application
+) : AndroidViewModel(application) {
     private val repository = BibleRepository()
     private val bibleId = "de4e12af7f28f599-02" // English Standard Version (ESV)
     
@@ -23,6 +33,22 @@ class WatchViewModel : ViewModel() {
 
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
+
+    private val _viewerCount = MutableStateFlow(0)
+    val viewerCount = _viewerCount.asStateFlow()
+
+    private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
+    val chatMessages = _chatMessages.asStateFlow()
+
+    private val _selectedTab = MutableStateFlow(ChatTab.CHAT)
+    val selectedTab = _selectedTab.asStateFlow()
+
+    private val _showNoteDialog = MutableStateFlow(false)
+    val showNoteDialog = _showNoteDialog.asStateFlow()
+
+    private val notesViewModel = NotesViewModel(getApplication())
+
+    val notes = notesViewModel.notes
 
     // List of inspiring Bible verses
     private val verseIds = listOf(
@@ -40,6 +66,12 @@ class WatchViewModel : ViewModel() {
 
     init {
         fetchVerseOfDay()
+        viewModelScope.launch {
+            while(true) {
+                delay(5000) // Update every 5 seconds
+                _viewerCount.value = (100..150).random() // Simulate random viewer count
+            }
+        }
     }
 
     private fun fetchVerseOfDay() {
@@ -74,4 +106,82 @@ class WatchViewModel : ViewModel() {
     fun refreshVerse() {
         fetchVerseOfDay()
     }
-} 
+
+    fun sendChatMessage(message: String, userName: String = "User") {
+        val newMessage = ChatMessage(
+            userName = userName,
+            message = message,
+            timestamp = System.currentTimeMillis()
+        )
+        _chatMessages.value = _chatMessages.value + newMessage
+    }
+
+    fun addReaction(messageId: String, emoji: String) {
+        val currentMessages = _chatMessages.value
+        val updatedMessages = currentMessages.map { message ->
+            if (message.id == messageId) {
+                val currentCount = message.reactions[emoji] ?: 0
+                message.copy(
+                    reactions = message.reactions + (emoji to currentCount + 1)
+                )
+            } else {
+                message
+            }
+        }
+        _chatMessages.value = updatedMessages
+    }
+
+    fun addReply(messageId: String, reply: String, userName: String = "User") {
+        val currentMessages = _chatMessages.value
+        val updatedMessages = currentMessages.map { message ->
+            if (message.id == messageId) {
+                message.copy(
+                    replies = message.replies + ChatReply(
+                        userName = userName,
+                        message = reply,
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
+            } else {
+                message
+            }
+        }
+        _chatMessages.value = updatedMessages
+    }
+
+    fun setSelectedTab(tab: ChatTab) {
+        _selectedTab.value = tab
+    }
+
+    fun addNote(title: String, content: String, verseReference: String? = null, type: NoteType = NoteType.GENERAL) {
+        notesViewModel.addNote(title, content, verseReference, type)
+    }
+
+    fun showNoteDialog() {
+        _showNoteDialog.value = true
+    }
+
+    fun hideNoteDialog() {
+        _showNoteDialog.value = false
+    }
+
+    fun onNoteAdded(title: String, content: String) {
+        addNote(title, content)
+        hideNoteDialog()
+    }
+}
+
+data class ChatMessage(
+    val id: String = System.currentTimeMillis().toString(),
+    val userName: String,
+    val message: String,
+    val timestamp: Long,
+    val reactions: Map<String, Int> = mapOf(),
+    val replies: List<ChatReply> = listOf()
+)
+
+data class ChatReply(
+    val userName: String,
+    val message: String,
+    val timestamp: Long
+) 
