@@ -17,28 +17,37 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import com.example.fullcrossapplication.R
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 
 data class PaymentMethod(
     val name: String,
     val icon: Int,
     val handle: String,
-    val description: String = ""
+    val description: String = "",
+    val deepLink: String? = null
 )
 
 @Composable
 fun DonateScreen() {
+    val context = LocalContext.current
+    
     val paymentMethods = listOf(
         PaymentMethod(
             name = "PayPal",
             icon = R.drawable.ic_paypal,
-            handle = "@fullcrossministries",
-            description = "Send via PayPal to support our ministry"
+            handle = "church@fullcrossministries.org",
+            description = "Send via PayPal to support our ministry",
+            deepLink = "https://www.paypal.com/myaccount/transfer/homepage/buy/preview"
         ),
         PaymentMethod(
             name = "Cash App",
             icon = R.drawable.ic_cashapp,
-            handle = "@fullcrossmin",
-            description = "Quick and easy donations through Cash App"
+            handle = "@FullCross",
+            description = "Quick and easy donations through Cash App",
+            deepLink = "https://cash.app/\$FullCross"
         ),
         PaymentMethod(
             name = "Venmo",
@@ -59,10 +68,11 @@ fun DonateScreen() {
             description = "Quick payment using Apple Pay"
         ),
         PaymentMethod(
-            name = "Givlify",
+            name = "Givelify",
             icon = R.drawable.ic_givlify,
-            handle = "fullcrossministries",
-            description = "Support us through Givlify platform"
+            handle = "Full Cross Ministries",
+            description = "Support us through Givelify platform",
+            deepLink = "https://www.givelify.com/donate/MTUxNDM5OQ==/selection"
         )
     )
 
@@ -101,9 +111,73 @@ fun DonateScreen() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PaymentMethodCard(paymentMethod: PaymentMethod) {
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        onClick = { /* Handle payment method click */ }
+        onClick = {
+            when (paymentMethod.name) {
+                "Cash App" -> if (paymentMethod.deepLink != null) {
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(paymentMethod.deepLink))
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            "Please install Cash App to proceed with payment",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                "PayPal" -> {
+                    try {
+                        val uri = Uri.parse("paypal://").buildUpon()
+                            .appendPath("send")
+                            .appendPath("church@fullcrossministries.org")
+                            .build()
+                        val intent = Intent(Intent.ACTION_VIEW, uri)
+                        
+                        // Try to start PayPal app first
+                        try {
+                            intent.setPackage("com.paypal.android.p2pmobile")
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // If PayPal app is not installed, open in browser
+                            val webIntent = Intent(Intent.ACTION_VIEW, 
+                                Uri.parse("https://paypal.me/fullcrossministries"))
+                            context.startActivity(webIntent)
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            "Unable to open PayPal",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                "Givelify" -> {
+                    try {
+                        // Try to open Givelify app first
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(paymentMethod.deepLink))
+                        intent.setPackage("com.givelify.android")
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // If Givelify app is not installed, open in browser
+                            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse(paymentMethod.deepLink))
+                            context.startActivity(webIntent)
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            "Unable to open Givelify",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        }
     ) {
         Row(
             modifier = Modifier
