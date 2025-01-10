@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fullcrossapplication.data.BibleRepository
 import com.example.fullcrossapplication.data.VerseOfDay
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -24,6 +25,12 @@ class WatchViewModel : ViewModel() {
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 
+    private val _viewerCount = MutableStateFlow(0)
+    val viewerCount = _viewerCount.asStateFlow()
+
+    private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
+    val chatMessages = _chatMessages.asStateFlow()
+
     // List of inspiring Bible verses
     private val verseIds = listOf(
         "JHN.3.16", // John 3:16
@@ -40,6 +47,12 @@ class WatchViewModel : ViewModel() {
 
     init {
         fetchVerseOfDay()
+        viewModelScope.launch {
+            while(true) {
+                delay(5000) // Update every 5 seconds
+                _viewerCount.value = (100..150).random() // Simulate random viewer count
+            }
+        }
     }
 
     private fun fetchVerseOfDay() {
@@ -74,4 +87,19 @@ class WatchViewModel : ViewModel() {
     fun refreshVerse() {
         fetchVerseOfDay()
     }
-} 
+
+    fun sendChatMessage(message: String, userName: String = "User") {
+        val newMessage = ChatMessage(
+            userName = userName,
+            message = message,
+            timestamp = System.currentTimeMillis()
+        )
+        _chatMessages.value = _chatMessages.value + newMessage
+    }
+}
+
+data class ChatMessage(
+    val userName: String,
+    val message: String,
+    val timestamp: Long
+) 
