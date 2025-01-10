@@ -1,27 +1,22 @@
 package com.example.fullcrossapplication
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -31,36 +26,86 @@ fun SplashScreen(onSplashScreenFinish: () -> Unit) {
     var startAnimation by remember { mutableStateOf(false) }
     val alphaAnim = animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
-        animationSpec = tween(durationMillis = 2000),
+        animationSpec = tween(durationMillis = 1000),
         label = "Alpha Animation"
+    )
+    
+    val scaleAnim = animateFloatAsState(
+        targetValue = if (startAnimation) 1f else 0.5f,
+        animationSpec = tween(
+            durationMillis = 1000,
+            easing = EaseOutBack
+        ),
+        label = "Scale Animation"
+    )
+
+    // Floating effect animation
+    val infiniteTransition = rememberInfiniteTransition(label = "Infinite Transition")
+    val offsetY by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 10f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "Float Animation"
     )
 
     LaunchedEffect(key1 = true) {
         startAnimation = true
-        delay(3000)
+        delay(2500)
         onSplashScreenFinish()
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(horizontal = 32.dp, vertical = 64.dp)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        MaterialTheme.colorScheme.surface,
+                        MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    )
+                )
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.ic_christian_cross),
-            contentDescription = "Christian Cross",
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
             modifier = Modifier
-                .size(120.dp)
+                .offset(y = offsetY.dp)
                 .alpha(alphaAnim.value)
-        )
-        Text(
-            text = stringResource(id = R.string.ministry_name),
-            color = Color.Black,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.alpha(alphaAnim.value)
-        )
+                .scale(scaleAnim.value)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_christian_cross),
+                contentDescription = "Christian Cross",
+                modifier = Modifier
+                    .size(150.dp)
+                    .padding(bottom = 16.dp)
+            )
+            
+            Text(
+                text = stringResource(id = R.string.ministry_name),
+                color = Color.Black,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Light,
+                letterSpacing = 1.sp,
+                lineHeight = 38.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp).padding(top = 16.dp)
+            )
+            
+            Text(
+                text = "Welcome to your spiritual journey",
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                fontSize = 16.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
     }
 } 
