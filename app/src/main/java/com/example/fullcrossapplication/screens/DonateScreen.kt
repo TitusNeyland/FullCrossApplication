@@ -52,8 +52,9 @@ fun DonateScreen() {
         PaymentMethod(
             name = "Venmo",
             icon = R.drawable.ic_venmo,
-            handle = "@fullcross-ministries",
-            description = "Send your donation through Venmo"
+            handle = "@Titus-Neyland",
+            description = "Send your donation through Venmo",
+            deepLink = "venmo://paycharge?txn=pay&recipients=Titus-Neyland"
         ),
         PaymentMethod(
             name = "Zelle",
@@ -152,6 +153,29 @@ private fun PaymentMethodCard(paymentMethod: PaymentMethod) {
                         Toast.makeText(
                             context,
                             "Unable to open PayPal",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+                "Venmo" -> {
+                    try {
+                        // Try to open Venmo app first
+                        val uri = Uri.parse("venmo://paycharge?txn=pay&recipients=Titus-Neyland")
+                        val intent = Intent(Intent.ACTION_VIEW, uri)
+                        intent.setPackage("com.venmo")
+                        
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // If Venmo app is not installed, open in browser
+                            val webIntent = Intent(Intent.ACTION_VIEW, 
+                                Uri.parse("https://venmo.com/Titus-Neyland"))
+                            context.startActivity(webIntent)
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            "Unable to open Venmo",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
