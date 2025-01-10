@@ -96,9 +96,51 @@ class WatchViewModel : ViewModel() {
         )
         _chatMessages.value = _chatMessages.value + newMessage
     }
+
+    fun addReaction(messageId: String, emoji: String) {
+        val currentMessages = _chatMessages.value
+        val updatedMessages = currentMessages.map { message ->
+            if (message.id == messageId) {
+                val currentCount = message.reactions[emoji] ?: 0
+                message.copy(
+                    reactions = message.reactions + (emoji to currentCount + 1)
+                )
+            } else {
+                message
+            }
+        }
+        _chatMessages.value = updatedMessages
+    }
+
+    fun addReply(messageId: String, reply: String, userName: String = "User") {
+        val currentMessages = _chatMessages.value
+        val updatedMessages = currentMessages.map { message ->
+            if (message.id == messageId) {
+                message.copy(
+                    replies = message.replies + ChatReply(
+                        userName = userName,
+                        message = reply,
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
+            } else {
+                message
+            }
+        }
+        _chatMessages.value = updatedMessages
+    }
 }
 
 data class ChatMessage(
+    val id: String = System.currentTimeMillis().toString(),
+    val userName: String,
+    val message: String,
+    val timestamp: Long,
+    val reactions: Map<String, Int> = mapOf(),
+    val replies: List<ChatReply> = listOf()
+)
+
+data class ChatReply(
     val userName: String,
     val message: String,
     val timestamp: Long
