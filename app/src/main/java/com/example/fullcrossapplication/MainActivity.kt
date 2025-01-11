@@ -15,6 +15,7 @@ import com.example.fullcrossapplication.ui.theme.FullCrossApplicationTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.fullcrossapplication.viewmodels.AuthViewModel
+import com.example.fullcrossapplication.viewmodels.ThemeViewModel
 import com.google.firebase.FirebaseApp
 
 class MainActivity : ComponentActivity() {
@@ -31,9 +32,13 @@ class MainActivity : ComponentActivity() {
         
         setContent {
             val authViewModel = viewModel<AuthViewModel>()
+            val themeViewModel = viewModel<ThemeViewModel>()
             val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
+            val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
             
-            FullCrossApplicationTheme {
+            FullCrossApplicationTheme(
+                darkTheme = isDarkMode
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

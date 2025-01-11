@@ -26,12 +26,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import android.app.NotificationManager
 import android.content.Context
 import androidx.compose.ui.platform.LocalContext
+import com.example.fullcrossapplication.viewmodels.ThemeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountScreen(
     onLogout: () -> Unit = {},
     authViewModel: AuthViewModel = viewModel(),
+    themeViewModel: ThemeViewModel = viewModel(),
     onNavigateToSupport: () -> Unit,
     onNavigateToHelpAndFaq: () -> Unit,
     onNavigateToChangePassword: () -> Unit
@@ -54,6 +56,8 @@ fun AccountScreen(
             showNotificationDialog = true
         }
     }
+
+    val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -177,8 +181,8 @@ fun AccountScreen(
             },
             trailingContent = {
                 Switch(
-                    checked = false,
-                    onCheckedChange = { /* Handle dark mode toggle */ }
+                    checked = isDarkMode,
+                    onCheckedChange = { themeViewModel.toggleDarkMode() }
                 )
             }
         )
