@@ -33,7 +33,8 @@ fun AccountScreen(
     onLogout: () -> Unit = {},
     authViewModel: AuthViewModel = viewModel(),
     onNavigateToSupport: () -> Unit,
-    onNavigateToHelpAndFaq: () -> Unit
+    onNavigateToHelpAndFaq: () -> Unit,
+    onNavigateToChangePassword: () -> Unit
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showNotificationDialog by remember { mutableStateOf(false) }
@@ -117,7 +118,7 @@ fun AccountScreen(
                     contentDescription = "Change Password"
                 )
             },
-            modifier = Modifier.clickable { /* Handle change password click */ }
+            modifier = Modifier.clickable { onNavigateToChangePassword() }
         )
 
         ListItem(

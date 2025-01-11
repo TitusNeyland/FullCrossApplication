@@ -31,6 +31,7 @@ import androidx.compose.material3.Button
 import androidx.compose.ui.unit.dp
 import com.example.fullcrossapplication.screens.ContactSupportScreen
 import com.example.fullcrossapplication.screens.HelpAndFaqScreen
+import com.example.fullcrossapplication.screens.ChangePasswordScreen
 
 enum class BottomNavItem(val title: String, val icon: ImageVector) {
     Read("Read", Icons.Default.Book),
@@ -48,6 +49,7 @@ fun MainScreen(
     var showLoginScreen by remember { mutableStateOf(false) }
     var showContactSupport by remember { mutableStateOf(false) }
     var showHelpAndFaq by remember { mutableStateOf(false) }
+    var showChangePassword by remember { mutableStateOf(false) }
 
     if (showLoginScreen) {
         LoginScreen(
@@ -67,6 +69,13 @@ fun MainScreen(
     if (showHelpAndFaq) {
         HelpAndFaqScreen(
             onNavigateBack = { showHelpAndFaq = false }
+        )
+        return
+    }
+
+    if (showChangePassword) {
+        ChangePasswordScreen(
+            onNavigateBack = { showChangePassword = false }
         )
         return
     }
@@ -98,7 +107,8 @@ fun MainScreen(
                 BottomNavItem.Account -> AccountScreen(
                     onLogout = onSignOut,
                     onNavigateToSupport = { showContactSupport = true },
-                    onNavigateToHelpAndFaq = { showHelpAndFaq = true }
+                    onNavigateToHelpAndFaq = { showHelpAndFaq = true },
+                    onNavigateToChangePassword = { showChangePassword = true }
                 )
             }
         }

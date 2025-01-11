@@ -6,6 +6,9 @@ import kotlinx.coroutines.tasks.await
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+import com.google.firebase.auth.EmailAuthProvider
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 
 class FirebaseRepository {
     private val auth = FirebaseAuth.getInstance()
@@ -80,6 +83,29 @@ class FirebaseRepository {
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    suspend fun changePassword(currentPassword: String, newPassword: String): Result<Unit> {
+        val user = auth.currentUser ?: return Result.failure(Exception("User not logged in"))
+        val email = user.email ?: return Result.failure(Exception("User email not found"))
+        
+        return try {
+            // Re-authenticate user with current password
+            val credential = EmailAuthProvider.getCredential(email, currentPassword)
+            user.reauthenticate(credential).await()
+            
+            // Update password
+            user.updatePassword(newPassword).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            when {
+                e is FirebaseAuthInvalidCredentialsException -> 
+                    Result.failure(Exception("Current password is incorrect"))
+                e is FirebaseAuthWeakPasswordException -> 
+                    Result.failure(Exception("New password is too weak. Please use at least 6 characters"))
+                else -> Result.failure(Exception("Failed to change password. Please try again later"))
+            }
         }
     }
 } 
