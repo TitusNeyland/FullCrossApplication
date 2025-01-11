@@ -42,8 +42,12 @@ class ContactsViewModel private constructor(
     private val _friends = MutableStateFlow<List<UserProfile>>(emptyList())
     val friends: StateFlow<List<UserProfile>> = _friends
     
+    private val _pendingFriendRequests = MutableStateFlow<List<UserProfile>>(emptyList())
+    val pendingFriendRequests: StateFlow<List<UserProfile>> = _pendingFriendRequests
+    
     init {
         fetchFriends()
+        fetchPendingFriendRequests()
     }
     
     fun syncContacts() {
@@ -288,6 +292,51 @@ class ContactsViewModel private constructor(
                 authViewModel.fetchFriendsCount()
             } catch (e: Exception) {
                 _error.value = "Failed to remove friend: ${e.message}"
+            }
+        }
+    }
+    
+    private fun fetchPendingFriendRequests() {
+        viewModelScope.launch {
+            try {
+                val currentUser = FirebaseAuth.getInstance().currentUser
+                    ?: throw Exception("Not logged in")
+                
+                FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(currentUser.uid)
+                    .collection("friendships")
+                    .whereEqualTo("status", "pending")
+                    .addSnapshotListener { snapshot, e ->
+                        if (e != null) {
+                            _error.value = "Error fetching friend requests: ${e.message}"
+                            return@addSnapshotListener
+                        }
+                        
+                        viewModelScope.launch {
+                            val pendingRequests = snapshot?.documents?.mapNotNull { doc ->
+                                FirebaseFirestore.getInstance()
+                                    .collection("users")
+                                    .document(doc.id)
+                                    .get()
+                                    .await()
+                                    .let { userDoc ->
+                                        if (userDoc.exists()) {
+                                            UserProfile(
+                                                id = userDoc.id,
+                                                firstName = userDoc.getString("firstName") ?: "",
+                                                lastName = userDoc.getString("lastName") ?: "",
+                                                phoneNumber = userDoc.getString("phoneNumber") ?: ""
+                                            )
+                                        } else null
+                                    }
+                            } ?: emptyList()
+                            
+                            _pendingFriendRequests.value = pendingRequests
+                        }
+                    }
+            } catch (e: Exception) {
+                _error.value = "Failed to fetch friend requests: ${e.message}"
             }
         }
     }

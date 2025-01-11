@@ -2,8 +2,8 @@ package com.example.fullcrossapplication.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.fullcrossapplication.data.UserProfile
 import com.example.fullcrossapplication.data.FriendshipStatus
+import com.example.fullcrossapplication.data.UserProfile
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow

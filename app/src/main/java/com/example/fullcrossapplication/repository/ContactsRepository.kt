@@ -2,7 +2,6 @@ package com.example.fullcrossapplication.repository
 
 import android.content.Context
 import android.provider.ContactsContract
-import android.database.Cursor
 import com.example.fullcrossapplication.data.Contact
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
