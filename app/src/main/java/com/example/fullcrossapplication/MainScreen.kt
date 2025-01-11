@@ -52,6 +52,7 @@ fun MainScreen(
     var showHelpAndFaq by remember { mutableStateOf(false) }
     var showChangePassword by remember { mutableStateOf(false) }
     var showEditProfile by remember { mutableStateOf(false) }
+    var showFriendsList by remember { mutableStateOf(false) }
 
     if (showLoginScreen) {
         LoginScreen(
@@ -118,7 +119,8 @@ fun MainScreen(
                     onNavigateToSupport = { showContactSupport = true },
                     onNavigateToHelpAndFaq = { showHelpAndFaq = true },
                     onNavigateToChangePassword = { showChangePassword = true },
-                    onNavigateToEditProfile = { showEditProfile = true }
+                    onNavigateToEditProfile = { showEditProfile = true },
+                    onNavigateToFriends = { showFriendsList = true }
                 )
             }
         }
