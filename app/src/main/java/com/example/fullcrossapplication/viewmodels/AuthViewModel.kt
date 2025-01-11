@@ -94,4 +94,23 @@ class AuthViewModel(
     fun setError(message: String) {
         _error.value = message
     }
+
+    fun updateProfile(firstName: String, lastName: String, onComplete: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            
+            repository.updateUserProfile(firstName, lastName)
+                .onSuccess {
+                    _currentUser.value = repository.getCurrentUser()
+                    onComplete(true)
+                }
+                .onFailure { exception ->
+                    _error.value = exception.message ?: "Failed to update profile"
+                    onComplete(false)
+                }
+            
+            _isLoading.value = false
+        }
+    }
 } 
