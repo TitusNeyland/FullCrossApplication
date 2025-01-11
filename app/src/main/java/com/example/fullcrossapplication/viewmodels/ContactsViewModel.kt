@@ -69,9 +69,6 @@ class ContactsViewModel private constructor(
             
             try {
                 if (query.length >= 2) {
-                    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
-                        ?: throw Exception("Not logged in")
-                    
                     val cleanQuery = query.trim().lowercase()
                     FirebaseFirestore.getInstance()
                         .collection("users")
@@ -79,9 +76,6 @@ class ContactsViewModel private constructor(
                         .await()
                         .documents
                         .mapNotNull { doc ->
-                            // Skip current user in search results
-                            if (doc.id == currentUserId) return@mapNotNull null
-                            
                             val firstName = doc.getString("firstName")?.lowercase() ?: ""
                             val lastName = doc.getString("lastName")?.lowercase() ?: ""
                             val phone = doc.getString("phoneNumber")?.replace("[^0-9]".toRegex(), "") ?: ""
@@ -121,12 +115,6 @@ class ContactsViewModel private constructor(
             try {
                 val currentUser = FirebaseAuth.getInstance().currentUser
                     ?: throw Exception("Not logged in")
-                
-                // Prevent self-friend requests
-                if (currentUser.uid == toUserId) {
-                    _error.value = "You cannot send a friend request to yourself"
-                    return@launch
-                }
                 
                 val currentUserDoc = FirebaseFirestore.getInstance()
                     .collection("users")
