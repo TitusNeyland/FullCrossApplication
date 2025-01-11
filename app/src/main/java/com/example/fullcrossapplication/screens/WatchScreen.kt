@@ -92,6 +92,8 @@ import com.example.fullcrossapplication.data.NotificationType
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Person
 import com.example.fullcrossapplication.data.FriendshipStatus
+import android.app.Application
+import com.example.fullcrossapplication.viewmodels.AuthViewModel
 
 data class LiveStream(
     val title: String,
@@ -106,12 +108,19 @@ data class LiveStream(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WatchScreen(
-    notificationsViewModel: NotificationsViewModel = viewModel()
+    notificationsViewModel: NotificationsViewModel = viewModel(),
+    authViewModel: AuthViewModel = viewModel()
 ) {
     var showSocialDialog by remember { mutableStateOf(false) }
     val viewerCount = 128 // Example viewer count
     val context = LocalContext.current
     val unreadCount by notificationsViewModel.unreadCount.collectAsStateWithLifecycle()
+    val contactsViewModel: ContactsViewModel = viewModel(
+        factory = ContactsViewModel.provideFactory(
+            application = context.applicationContext as Application,
+            authViewModel = authViewModel
+        )
+    )
 
     Column(
         modifier = Modifier

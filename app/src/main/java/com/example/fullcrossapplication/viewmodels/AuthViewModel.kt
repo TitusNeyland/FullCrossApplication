@@ -130,16 +130,20 @@ class AuthViewModel(
         viewModelScope.launch {
             try {
                 val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
+                
+                // Query friendships collection and count only accepted friendships
                 val snapshot = FirebaseFirestore.getInstance()
                     .collection("users")
                     .document(currentUserId)
-                    .collection("friends")
+                    .collection("friendships")
+                    .whereEqualTo("status", "accepted")
                     .get()
                     .await()
                 
                 _friendsCount.value = snapshot.size()
             } catch (e: Exception) {
                 // Handle error
+                _friendsCount.value = 0
             }
         }
     }

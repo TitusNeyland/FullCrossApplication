@@ -2,18 +2,23 @@ package com.example.fullcrossapplication.viewmodels
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.fullcrossapplication.data.Contact
+import com.example.fullcrossapplication.data.UserProfile
 import com.example.fullcrossapplication.repository.ContactsRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import com.google.firebase.firestore.FirebaseFirestore
-import com.example.fullcrossapplication.data.UserProfile
 import kotlinx.coroutines.tasks.await
-import com.google.firebase.auth.FirebaseAuth
 
-class ContactsViewModel(application: Application) : AndroidViewModel(application) {
+class ContactsViewModel private constructor(
+    application: Application,
+    private val authViewModel: AuthViewModel
+) : AndroidViewModel(application) {
     private val contactsRepository = ContactsRepository(application)
     
     private val _contacts = MutableStateFlow<List<Contact>>(emptyList())
@@ -170,6 +175,7 @@ class ContactsViewModel(application: Application) : AndroidViewModel(application
                     )
                     .await()
 
+                authViewModel.fetchFriendsCount()
             } catch (e: Exception) {
                 _error.value = "Failed to accept friend request: ${e.message}"
             }
@@ -199,8 +205,21 @@ class ContactsViewModel(application: Application) : AndroidViewModel(application
                     .delete()
                     .await()
 
+                authViewModel.fetchFriendsCount()
             } catch (e: Exception) {
                 _error.value = "Failed to decline friend request: ${e.message}"
+            }
+        }
+    }
+
+    companion object {
+        fun provideFactory(
+            application: Application,
+            authViewModel: AuthViewModel
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return ContactsViewModel(application, authViewModel) as T
             }
         }
     }
