@@ -158,7 +158,7 @@ private fun DateCard(
     onDeleteNote: (Note) -> Unit
 ) {
     val elevation by animateFloatAsState(
-        targetValue = if (isExpanded) 8f else 2f,
+        targetValue = if (isExpanded) 4f else 1f,
         label = "elevation"
     )
 
@@ -170,11 +170,12 @@ private fun DateCard(
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = if (isExpanded) 
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f)
             else 
                 MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = elevation.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = elevation.dp),
+        border = null
     ) {
         Column {
             // Date Header with gradient background
