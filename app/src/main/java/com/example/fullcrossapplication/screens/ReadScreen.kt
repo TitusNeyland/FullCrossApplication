@@ -1,9 +1,11 @@
 package com.example.fullcrossapplication.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -165,34 +167,48 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                 // Show bible versions and verse of the day
                 else -> {
                     Column {
-                        // Add search field
+                        // Enhanced search field
                         OutlinedTextField(
                             value = searchQuery,
                             onValueChange = { searchQuery = it },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp),
+                                .padding(horizontal = 16.dp)
+                                .padding(top = 8.dp, bottom = 16.dp),
                             placeholder = { Text("Search Bible versions...") },
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.Search,
-                                    contentDescription = "Search"
+                                    contentDescription = "Search",
+                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
                                 )
                             },
+                            shape = MaterialTheme.shapes.large,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            ),
                             singleLine = true
                         )
 
-                        // Verse of the Day Card
+                        // Enhanced Verse of the Day Card
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 8.dp),
+                            shape = MaterialTheme.shapes.large,
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.1f)
+                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                            ),
+                            elevation = CardDefaults.cardElevation(
+                                defaultElevation = 0.dp,
+                                pressedElevation = 0.dp
                             )
                         ) {
                             Column(
-                                modifier = Modifier.padding(16.dp),
+                                modifier = Modifier.padding(20.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Row(
@@ -200,19 +216,35 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = "Verse of the Day",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.AutoAwesome,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = "Verse of the Day",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                     IconButton(
                                         onClick = { viewModel.refreshVerseOfDay() },
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier
+                                            .size(32.dp)
+                                            .background(
+                                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                                shape = CircleShape
+                                            )
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Refresh,
                                             contentDescription = "Refresh verse",
-                                            modifier = Modifier.size(16.dp)
+                                            modifier = Modifier.size(16.dp),
+                                            tint = MaterialTheme.colorScheme.primary
                                         )
                                     }
                                 }
@@ -220,8 +252,9 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                                 if (isLoadingVerse) {
                                     CircularProgressIndicator(
                                         modifier = Modifier
-                                            .padding(16.dp)
-                                            .size(24.dp)
+                                            .padding(24.dp)
+                                            .size(24.dp),
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                 } else if (verseError != null) {
                                     Text(
@@ -231,32 +264,89 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                                     )
                                 } else {
                                     verseOfDay?.let { verse ->
+                                        Spacer(modifier = Modifier.height(16.dp))
                                         Text(
                                             text = verse.text,
                                             style = MaterialTheme.typography.bodyLarge,
                                             textAlign = TextAlign.Center,
-                                            modifier = Modifier.padding(vertical = 8.dp)
+                                            modifier = Modifier.padding(horizontal = 8.dp),
+                                            lineHeight = MaterialTheme.typography.bodyLarge.fontSize * 1.5
                                         )
+                                        Spacer(modifier = Modifier.height(12.dp))
                                         Text(
-                                            text = "- ${verse.reference}",
-                                            style = MaterialTheme.typography.bodyMedium,
+                                            text = verse.reference,
+                                            style = MaterialTheme.typography.labelLarge,
                                             color = MaterialTheme.colorScheme.primary,
-                                            fontStyle = FontStyle.Italic
+                                            fontWeight = FontWeight.Medium,
+                                            modifier = Modifier
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                                    shape = MaterialTheme.shapes.small
+                                                )
+                                                .padding(horizontal = 12.dp, vertical = 6.dp)
                                         )
                                     }
                                 }
                             }
                         }
 
-                        // Bible versions list
-                        LazyColumn {
+                        // Add divider
+                        Divider(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                                .fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                            thickness = 1.dp
+                        )
+
+                        // Enhanced Bible versions list
+                        LazyColumn(
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             items(bibles.filter { bible ->
                                 searchQuery.isEmpty() || bible.name.contains(searchQuery, ignoreCase = true) ||
                                         bible.language.name.contains(searchQuery, ignoreCase = true)
                             }) { bible ->
-                                BibleItem(bible) {
-                                    viewModel.setSelectedBible(it)
-                                    viewModel.loadBooks(it.id)
+                                Card(
+                                    onClick = { 
+                                        viewModel.setSelectedBible(bible)
+                                        viewModel.loadBooks(bible.id)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = MaterialTheme.shapes.medium,
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surface
+                                    ),
+                                    elevation = CardDefaults.cardElevation(
+                                        defaultElevation = 2.dp
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = bible.name,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Text(
+                                                text = bible.language.name,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                        }
+                                        Icon(
+                                            imageVector = Icons.Default.ChevronRight,
+                                            contentDescription = "Select Bible",
+                                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                                        )
+                                    }
                                 }
                             }
                         }

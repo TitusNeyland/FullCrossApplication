@@ -17,10 +17,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.NoteAdd
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -80,9 +81,7 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
                 Column {
                     Text(
                         "Your Journey Notes",
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.Bold
-                        )
+                        style = MaterialTheme.typography.titleLarge
                     )
                     Text(
                         "${datesWithNotes.size} days of reflection",
@@ -171,7 +170,7 @@ private fun DateCard(
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = if (isExpanded) 
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 1f)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
             else 
                 MaterialTheme.colorScheme.surface
         ),
