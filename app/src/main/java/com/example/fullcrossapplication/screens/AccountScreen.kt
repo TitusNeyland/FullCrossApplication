@@ -16,6 +16,16 @@ import androidx.compose.foundation.clickable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.fullcrossapplication.viewmodels.AuthViewModel
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.app.NotificationManager
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,7 +34,23 @@ fun AccountScreen(
     authViewModel: AuthViewModel = viewModel()
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showNotificationDialog by remember { mutableStateOf(false) }
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    
+    var notificationsEnabled by remember { 
+        mutableStateOf(notificationManager.areNotificationsEnabled())
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        notificationsEnabled = isGranted
+        if (!isGranted && !notificationManager.areNotificationsEnabled()) {
+            showNotificationDialog = true
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -100,7 +126,34 @@ fun AccountScreen(
                     contentDescription = "Notifications"
                 )
             },
-            modifier = Modifier.clickable { /* Handle notifications click */ }
+            trailingContent = {
+                Switch(
+                    checked = notificationsEnabled,
+                    onCheckedChange = { checked ->
+                        if (checked && !notificationManager.areNotificationsEnabled()) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                showNotificationDialog = true
+                            }
+                        } else if (!checked && notificationManager.areNotificationsEnabled()) {
+                            showNotificationDialog = true
+                        }
+                        notificationsEnabled = checked
+                    }
+                )
+            },
+            modifier = Modifier.clickable {
+                if (!notificationManager.areNotificationsEnabled()) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    } else {
+                        showNotificationDialog = true
+                    }
+                } else {
+                    showNotificationDialog = true
+                }
+            }
         )
 
         // App Settings
@@ -204,6 +257,46 @@ fun AccountScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showNotificationDialog) {
+        AlertDialog(
+            onDismissRequest = { showNotificationDialog = false },
+            title = { Text("Notification Settings") },
+            text = { 
+                Text(
+                    if (notificationManager.areNotificationsEnabled())
+                        "Would you like to manage notification settings for this app?"
+                    else
+                        "To receive notifications, please enable them in your device settings."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showNotificationDialog = false
+                        val intent = Intent().apply {
+                            action = Settings.ACTION_APP_NOTIFICATION_SETTINGS
+                            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                        }
+                        context.startActivity(intent)
+                        notificationsEnabled = notificationManager.areNotificationsEnabled()
+                    }
+                ) {
+                    Text("Open Settings")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { 
+                        showNotificationDialog = false
+                        notificationsEnabled = notificationManager.areNotificationsEnabled()
+                    }
+                ) {
                     Text("Cancel")
                 }
             }
