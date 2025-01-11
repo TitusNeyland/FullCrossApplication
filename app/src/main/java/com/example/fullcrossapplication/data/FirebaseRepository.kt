@@ -15,7 +15,13 @@ class FirebaseRepository {
     private val firestore = FirebaseFirestore.getInstance()
     private val usersCollection = firestore.collection("users")
 
-    suspend fun signUp(email: String, password: String, firstName: String, lastName: String): Result<User> {
+    suspend fun signUp(
+        email: String, 
+        password: String, 
+        firstName: String, 
+        lastName: String,
+        phoneNumber: String = ""
+    ): Result<User> {
         return try {
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
             val uid = authResult.user?.uid ?: throw Exception("Failed to get user ID")
@@ -24,7 +30,8 @@ class FirebaseRepository {
                 uid = uid,
                 email = email,
                 firstName = firstName,
-                lastName = lastName
+                lastName = lastName,
+                phoneNumber = phoneNumber
             )
             
             try {
@@ -70,7 +77,8 @@ class FirebaseRepository {
 
     suspend fun updateUserProfile(
         firstName: String? = null,
-        lastName: String? = null
+        lastName: String? = null,
+        phoneNumber: String? = null
     ): Result<Unit> {
         val uid = auth.currentUser?.uid ?: return Result.failure(Exception("User not logged in"))
         
@@ -78,6 +86,7 @@ class FirebaseRepository {
             val updates = mutableMapOf<String, Any>()
             firstName?.let { updates["firstName"] = it }
             lastName?.let { updates["lastName"] = it }
+            phoneNumber?.let { updates["phoneNumber"] = it }
             
             usersCollection.document(uid).update(updates).await()
             Result.success(Unit)

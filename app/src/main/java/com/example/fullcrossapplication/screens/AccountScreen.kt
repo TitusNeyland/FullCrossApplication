@@ -36,7 +36,8 @@ fun AccountScreen(
     themeViewModel: ThemeViewModel = viewModel(),
     onNavigateToSupport: () -> Unit,
     onNavigateToHelpAndFaq: () -> Unit,
-    onNavigateToChangePassword: () -> Unit
+    onNavigateToChangePassword: () -> Unit,
+    onNavigateToEditProfile: () -> Unit
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showNotificationDialog by remember { mutableStateOf(false) }
@@ -111,7 +112,7 @@ fun AccountScreen(
                     contentDescription = "Edit Profile"
                 )
             },
-            modifier = Modifier.clickable { /* Handle edit profile click */ }
+            modifier = Modifier.clickable { onNavigateToEditProfile() }
         )
 
         ListItem(
