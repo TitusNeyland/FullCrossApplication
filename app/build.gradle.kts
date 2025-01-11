@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.fullcrossapplication"
-        minSdk = 34
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -108,4 +108,7 @@ dependencies {
     
     // Add coroutines support for Firebase
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
+    // Add these dependencies in the dependencies block
+    implementation("io.coil-kt:coil-compose:2.5.0")
 }

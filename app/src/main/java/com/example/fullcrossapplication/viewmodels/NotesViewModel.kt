@@ -45,13 +45,14 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
     fun addNote(title: String, content: String, verseReference: String?, type: NoteType) {
         viewModelScope.launch {
             val note = Note(
-                date = selectedDate.value,
+                date = LocalDate.now(),
                 title = title,
                 content = content,
                 verseReference = verseReference,
                 type = type
             )
             noteDao.insertNote(note)
+            setSelectedDate(LocalDate.now())
         }
     }
 
