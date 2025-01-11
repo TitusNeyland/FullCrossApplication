@@ -5,6 +5,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,6 +28,10 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.ContactPhone
+import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -57,6 +62,20 @@ import com.example.fullcrossapplication.R
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.TextButton
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fullcrossapplication.viewmodels.ContactsViewModel
 
 data class LiveStream(
     val title: String,
@@ -71,6 +90,7 @@ data class LiveStream(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WatchScreen() {
+    var showSocialDialog by remember { mutableStateOf(false) }
     val viewerCount = 128 // Example viewer count
     val context = LocalContext.current
 
@@ -101,6 +121,18 @@ fun WatchScreen() {
                         "View the latest live broadcast here",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                }
+            },
+            actions = {
+                IconButton(
+                    onClick = { showSocialDialog = true },
+                    modifier = Modifier.padding(end = 8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.People,
+                        contentDescription = "Connect with Friends",
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
             },
@@ -145,6 +177,31 @@ fun WatchScreen() {
                 UpcomingStreamCard(stream = stream)
             }
         }
+    }
+
+    if (showSocialDialog) {
+        SocialConnectionDialog(
+            onDismiss = { showSocialDialog = false },
+            onSyncContacts = {
+                // TODO: Implement contact sync
+                Toast.makeText(context, "Syncing contacts...", Toast.LENGTH_SHORT).show()
+                showSocialDialog = false
+            },
+            onReferContacts = {
+                val shareIntent = Intent().apply {
+                    action = Intent.ACTION_SEND
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, "Join me on our church app! [Your app link here]")
+                }
+                context.startActivity(Intent.createChooser(shareIntent, "Refer Friends"))
+                showSocialDialog = false
+            },
+            onAddFriends = {
+                // TODO: Implement add friends
+                Toast.makeText(context, "Add friends feature coming soon!", Toast.LENGTH_SHORT).show()
+                showSocialDialog = false
+            }
+        )
     }
 }
 
@@ -404,4 +461,137 @@ private fun formatDuration(duration: Duration): String {
         hours > 0 -> "${hours}h ${minutes}m"
         else -> "${minutes}m"
     }
+}
+
+@Composable
+private fun SocialConnectionDialog(
+    onDismiss: () -> Unit,
+    onSyncContacts: () -> Unit,
+    onReferContacts: () -> Unit,
+    onAddFriends: () -> Unit
+) {
+    val context = LocalContext.current
+    val contactsViewModel: ContactsViewModel = viewModel()
+    val contacts by contactsViewModel.contacts.collectAsState()
+    val isLoading by contactsViewModel.isLoading.collectAsState()
+    val error by contactsViewModel.error.collectAsState()
+    
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            contactsViewModel.syncContacts()
+        } else {
+            Toast.makeText(
+                context,
+                "Permission needed to sync contacts",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Connect with Friends",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Column {
+                ListItem(
+                    headlineContent = { Text("Sync Contacts") },
+                    supportingContent = { Text("Find friends who are already using the app") },
+                    leadingContent = {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.ContactPhone,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    modifier = Modifier.clickable {
+                        permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                    }
+                )
+                
+                if (error != null) {
+                    Text(
+                        text = error!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+                
+                if (contacts.isNotEmpty()) {
+                    Text(
+                        "Contacts (${contacts.size})",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                    
+                    LazyColumn(
+                        modifier = Modifier.height(200.dp)
+                    ) {
+                        items(contacts) { contact ->
+                            ListItem(
+                                headlineContent = { 
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(contact.name)
+                                        if (contact.isAppUser) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .padding(start = 8.dp)
+                                                    .size(8.dp)
+                                                    .background(
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        shape = CircleShape
+                                                    )
+                                            )
+                                        }
+                                    }
+                                },
+                                supportingContent = { 
+                                    contact.phoneNumber?.let { Text(it) }
+                                },
+                                leadingContent = {
+                                    Icon(
+                                        Icons.Default.PersonAdd,
+                                        contentDescription = null,
+                                        tint = if (contact.isAppUser) 
+                                            MaterialTheme.colorScheme.primary
+                                        else 
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                },
+                                modifier = Modifier.clickable(enabled = !contact.isAppUser) {
+                                    // Handle adding friend
+                                    if (!contact.isAppUser) {
+                                        // TODO: Implement invite friend functionality
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+                
+                // Rest of the dialog content...
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
 } 
