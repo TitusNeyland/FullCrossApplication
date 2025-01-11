@@ -27,6 +27,7 @@ import android.app.NotificationManager
 import android.content.Context
 import androidx.compose.ui.platform.LocalContext
 import com.example.fullcrossapplication.viewmodels.ThemeViewModel
+import com.example.fullcrossapplication.viewmodels.NotificationsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +39,8 @@ fun AccountScreen(
     onNavigateToHelpAndFaq: () -> Unit,
     onNavigateToChangePassword: () -> Unit,
     onNavigateToEditProfile: () -> Unit,
-    onNavigateToFriends: () -> Unit = {}
+    onNavigateToFriends: () -> Unit = {},
+    notificationsViewModel: NotificationsViewModel = viewModel()
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showNotificationDialog by remember { mutableStateOf(false) }
@@ -61,6 +63,7 @@ fun AccountScreen(
 
     val isDarkMode by themeViewModel.isDarkMode.collectAsStateWithLifecycle()
     val friendsCount by authViewModel.friendsCount.collectAsStateWithLifecycle()
+    val unreadCount by notificationsViewModel.unreadCount.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         authViewModel.fetchFriendsCount()

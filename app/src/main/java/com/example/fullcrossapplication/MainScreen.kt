@@ -33,6 +33,7 @@ import com.example.fullcrossapplication.screens.ContactSupportScreen
 import com.example.fullcrossapplication.screens.HelpAndFaqScreen
 import com.example.fullcrossapplication.screens.ChangePasswordScreen
 import com.example.fullcrossapplication.screens.EditProfileScreen
+import com.example.fullcrossapplication.screens.FriendsScreen
 
 enum class BottomNavItem(val title: String, val icon: ImageVector) {
     Read("Read", Icons.Default.Book),
@@ -86,6 +87,13 @@ fun MainScreen(
     if (showEditProfile) {
         EditProfileScreen(
             onNavigateBack = { showEditProfile = false }
+        )
+        return
+    }
+
+    if (showFriendsList) {
+        FriendsScreen(
+            onNavigateBack = { showFriendsList = false }
         )
         return
     }

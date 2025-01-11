@@ -72,6 +72,8 @@ import androidx.compose.material3.TextButton
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.CircularProgressIndicator
@@ -83,6 +85,10 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import com.example.fullcrossapplication.viewmodels.NotificationsViewModel
+import androidx.compose.material3.Badge
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.fullcrossapplication.data.NotificationType
 
 data class LiveStream(
     val title: String,
@@ -96,10 +102,13 @@ data class LiveStream(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WatchScreen() {
+fun WatchScreen(
+    notificationsViewModel: NotificationsViewModel = viewModel()
+) {
     var showSocialDialog by remember { mutableStateOf(false) }
     val viewerCount = 128 // Example viewer count
     val context = LocalContext.current
+    val unreadCount by notificationsViewModel.unreadCount.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -132,15 +141,26 @@ fun WatchScreen() {
                 }
             },
             actions = {
-                IconButton(
-                    onClick = { showSocialDialog = true },
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
-                    Icon(
-                        Icons.Default.People,
-                        contentDescription = "Connect with Friends",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
+                Box {
+                    IconButton(
+                        onClick = { showSocialDialog = true },
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.People,
+                            contentDescription = "Connect with Friends",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    if (unreadCount > 0) {
+                        Badge(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = (-4).dp, y = 4.dp)
+                        ) {
+                            Text(unreadCount.toString())
+                        }
+                    }
                 }
             },
             colors = TopAppBarDefaults.largeTopAppBarColors(
@@ -475,10 +495,11 @@ private fun SocialConnectionDialog(
     onDismiss: () -> Unit,
     onSyncContacts: () -> Unit,
     onReferContacts: () -> Unit,
-    onAddFriends: () -> Unit
+    onAddFriends: () -> Unit,
+    contactsViewModel: ContactsViewModel = viewModel(),
+    notificationsViewModel: NotificationsViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    val contactsViewModel: ContactsViewModel = viewModel()
     val contacts by contactsViewModel.contacts.collectAsState()
     val isLoading by contactsViewModel.isLoading.collectAsState()
     val error by contactsViewModel.error.collectAsState()
@@ -487,13 +508,17 @@ private fun SocialConnectionDialog(
     val searchResults by contactsViewModel.searchResults.collectAsState()
     val isSearching by contactsViewModel.isSearching.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
-    
+    val notifications by notificationsViewModel.notifications.collectAsStateWithLifecycle()
+    val friendRequests = notifications.filter { 
+        it.type == NotificationType.FRIEND_REQUEST && !it.read 
+    }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
             contactsViewModel.syncContacts()
-            isSyncExpanded = true  // Auto-expand when contacts are synced
+            isSyncExpanded = true
         } else {
             Toast.makeText(
                 context,
@@ -513,7 +538,76 @@ private fun SocialConnectionDialog(
         },
         text = {
             Column {
-                // Find Friends Section (Now First)
+                // Friend Requests Section (if there are any)
+                if (friendRequests.isNotEmpty()) {
+                    Text(
+                        "Friend Requests (${friendRequests.size})",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .heightIn(max = 200.dp)
+                            .fillMaxWidth()
+                    ) {
+                        items(friendRequests) { request ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                ListItem(
+                                    headlineContent = { 
+                                        Text(request.fromUserName)
+                                    },
+                                    supportingContent = {
+                                        Text(
+                                            "Sent you a friend request",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    trailingContent = {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            TextButton(
+                                                onClick = {
+                                                    // Accept friend request
+                                                    contactsViewModel.acceptFriendRequest(request.fromUserId)
+                                                    notificationsViewModel.markAsRead(request.id)
+                                                }
+                                            ) {
+                                                Text("Accept")
+                                            }
+                                            TextButton(
+                                                onClick = {
+                                                    // Decline friend request
+                                                    contactsViewModel.declineFriendRequest(request.fromUserId)
+                                                    notificationsViewModel.markAsRead(request.id)
+                                                }
+                                            ) {
+                                                Text("Decline")
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Divider(
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
+
+                // Existing Find Friends Section
                 ListItem(
                     headlineContent = { Text("Find Friends") },
                     supportingContent = { Text("Search for other members") },
@@ -615,7 +709,10 @@ private fun SocialConnectionDialog(
                                         )
                                     },
                                     modifier = Modifier.clickable {
-                                        // TODO: Implement add friend functionality
+                                        contactsViewModel.sendFriendRequest(
+                                            toUserId = user.id,
+                                            toUserName = user.fullName
+                                        )
                                         Toast.makeText(
                                             context,
                                             "Friend request sent to ${user.firstName}",

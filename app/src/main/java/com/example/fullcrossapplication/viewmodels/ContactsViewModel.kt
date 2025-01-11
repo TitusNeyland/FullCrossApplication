@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import com.google.firebase.firestore.FirebaseFirestore
 import com.example.fullcrossapplication.data.UserProfile
 import kotlinx.coroutines.tasks.await
+import com.google.firebase.auth.FirebaseAuth
 
 class ContactsViewModel(application: Application) : AndroidViewModel(application) {
     private val contactsRepository = ContactsRepository(application)
@@ -95,5 +96,112 @@ class ContactsViewModel(application: Application) : AndroidViewModel(application
     fun clearSearch() {
         _searchQuery.value = ""
         _searchResults.value = emptyList()
+    }
+    
+    fun sendFriendRequest(toUserId: String, toUserName: String) {
+        viewModelScope.launch {
+            try {
+                val currentUser = FirebaseAuth.getInstance().currentUser
+                    ?: throw Exception("Not logged in")
+                
+                val currentUserDoc = FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(currentUser.uid)
+                    .get()
+                    .await()
+                
+                val currentUserName = "${currentUserDoc.getString("firstName")} ${currentUserDoc.getString("lastName")}"
+                
+                // Create notification document
+                val notification = hashMapOf(
+                    "type" to "FRIEND_REQUEST",
+                    "fromUserId" to currentUser.uid,
+                    "fromUserName" to currentUserName,
+                    "timestamp" to System.currentTimeMillis(),
+                    "read" to false
+                )
+                
+                // Add notification to recipient's notifications collection
+                FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(toUserId)
+                    .collection("notifications")
+                    .add(notification)
+                    .await()
+                
+            } catch (e: Exception) {
+                _error.value = "Failed to send friend request: ${e.message}"
+            }
+        }
+    }
+    
+    fun acceptFriendRequest(fromUserId: String) {
+        viewModelScope.launch {
+            try {
+                val currentUser = FirebaseAuth.getInstance().currentUser
+                    ?: throw Exception("Not logged in")
+                
+                val timestamp = System.currentTimeMillis()
+                
+                // Update friendship status for both users
+                FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(currentUser.uid)
+                    .collection("friendships")
+                    .document(fromUserId)
+                    .set(
+                        mapOf(
+                            "status" to "accepted",
+                            "timestamp" to timestamp
+                        )
+                    )
+                    .await()
+
+                FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(fromUserId)
+                    .collection("friendships")
+                    .document(currentUser.uid)
+                    .set(
+                        mapOf(
+                            "status" to "accepted",
+                            "timestamp" to timestamp
+                        )
+                    )
+                    .await()
+
+            } catch (e: Exception) {
+                _error.value = "Failed to accept friend request: ${e.message}"
+            }
+        }
+    }
+    
+    fun declineFriendRequest(fromUserId: String) {
+        viewModelScope.launch {
+            try {
+                val currentUser = FirebaseAuth.getInstance().currentUser
+                    ?: throw Exception("Not logged in")
+                
+                // Delete friendship documents for both users
+                FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(currentUser.uid)
+                    .collection("friendships")
+                    .document(fromUserId)
+                    .delete()
+                    .await()
+
+                FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(fromUserId)
+                    .collection("friendships")
+                    .document(currentUser.uid)
+                    .delete()
+                    .await()
+
+            } catch (e: Exception) {
+                _error.value = "Failed to decline friend request: ${e.message}"
+            }
+        }
     }
 } 
