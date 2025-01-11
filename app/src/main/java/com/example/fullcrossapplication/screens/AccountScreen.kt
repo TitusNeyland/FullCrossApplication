@@ -31,7 +31,8 @@ import androidx.compose.ui.platform.LocalContext
 @Composable
 fun AccountScreen(
     onLogout: () -> Unit = {},
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
+    onNavigateToSupport: () -> Unit
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showNotificationDialog by remember { mutableStateOf(false) }
@@ -218,7 +219,7 @@ fun AccountScreen(
                     contentDescription = "Contact Support"
                 )
             },
-            modifier = Modifier.clickable { /* Handle contact support click */ }
+            modifier = Modifier.clickable { onNavigateToSupport() }
         )
 
         // Logout Button
