@@ -78,6 +78,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fullcrossapplication.viewmodels.ContactsViewModel
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 
 data class LiveStream(
     val title: String,
@@ -478,6 +483,10 @@ private fun SocialConnectionDialog(
     val isLoading by contactsViewModel.isLoading.collectAsState()
     val error by contactsViewModel.error.collectAsState()
     var isSyncExpanded by remember { mutableStateOf(false) }
+    var isFindFriendsExpanded by remember { mutableStateOf(false) }
+    val searchResults by contactsViewModel.searchResults.collectAsState()
+    val isSearching by contactsViewModel.isSearching.collectAsState()
+    var searchQuery by remember { mutableStateOf("") }
     
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -504,7 +513,133 @@ private fun SocialConnectionDialog(
         },
         text = {
             Column {
-                // Sync Contacts Header
+                // Find Friends Section (Now First)
+                ListItem(
+                    headlineContent = { Text("Find Friends") },
+                    supportingContent = { Text("Search for other members") },
+                    leadingContent = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    trailingContent = {
+                        IconButton(onClick = { isFindFriendsExpanded = !isFindFriendsExpanded }) {
+                            Icon(
+                                if (isFindFriendsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (isFindFriendsExpanded) "Collapse" else "Expand"
+                            )
+                        }
+                    },
+                    modifier = Modifier.clickable { isFindFriendsExpanded = !isFindFriendsExpanded }
+                )
+                
+                if (isFindFriendsExpanded) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { 
+                            searchQuery = it
+                            contactsViewModel.searchUsers(it)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        placeholder = { 
+                            Text(
+                                "Search by name or phone number",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(
+                                    onClick = { 
+                                        searchQuery = ""
+                                        contactsViewModel.clearSearch()
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Clear,
+                                        contentDescription = "Clear search"
+                                    )
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyMedium
+                    )
+                    
+                    if (isSearching) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    }
+                    
+                    if (searchResults.isNotEmpty()) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .height(200.dp)
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            items(searchResults) { user ->
+                                ListItem(
+                                    headlineContent = { Text(user.fullName) },
+                                    supportingContent = { 
+                                        Text(
+                                            user.phoneNumber.takeIf { it.isNotEmpty() }
+                                                ?.let { formatPhoneNumber(it) } ?: "No phone number"
+                                        )
+                                    },
+                                    leadingContent = {
+                                        Icon(
+                                            Icons.Default.PersonAdd,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    },
+                                    modifier = Modifier.clickable {
+                                        // TODO: Implement add friend functionality
+                                        Toast.makeText(
+                                            context,
+                                            "Friend request sent to ${user.firstName}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                )
+                            }
+                        }
+                    } else if (searchQuery.length >= 2 && !isSearching) {
+                        Text(
+                            "No users found",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                
+                // Sync Contacts Section (Now Second)
                 ListItem(
                     headlineContent = { Text("Sync Contacts") },
                     supportingContent = { Text("Find friends who are already using the app") },
@@ -603,8 +738,6 @@ private fun SocialConnectionDialog(
                         }
                     }
                 }
-
-                // Add other sections (Refer Friends, Add Friends) here...
             }
         },
         confirmButton = {
@@ -613,4 +746,16 @@ private fun SocialConnectionDialog(
             }
         }
     )
+}
+
+private fun formatPhoneNumber(number: String): String {
+    return try {
+        val cleaned = number.replace("[^0-9]".toRegex(), "")
+        when (cleaned.length) {
+            10 -> "(${cleaned.substring(0,3)}) ${cleaned.substring(3,6)}-${cleaned.substring(6)}"
+            else -> number
+        }
+    } catch (e: Exception) {
+        number
+    }
 } 
