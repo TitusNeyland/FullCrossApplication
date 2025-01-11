@@ -25,9 +25,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.app.NotificationManager
 import android.content.Context
+import android.widget.Toast
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import com.example.fullcrossapplication.viewmodels.ThemeViewModel
 import com.example.fullcrossapplication.viewmodels.NotificationsViewModel
+import com.example.fullcrossapplication.viewmodels.ContactsViewModel
+import androidx.compose.foundation.layout.heightIn
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,6 +74,8 @@ fun AccountScreen(
     LaunchedEffect(Unit) {
         authViewModel.fetchFriendsCount()
     }
+
+    var showFriendsList by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -306,6 +314,21 @@ fun AccountScreen(
             )
             Text("Logout")
         }
+
+        Button(
+            onClick = { showFriendsList = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+        ) {
+            Icon(
+                Icons.Default.People,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Manage Friends")
+        }
     }
 
     if (showLogoutDialog) {
@@ -370,4 +393,91 @@ fun AccountScreen(
             }
         )
     }
+
+    if (showFriendsList) {
+        FriendsList(
+            onDismiss = { showFriendsList = false }
+        )
+    }
+}
+
+@Composable
+fun FriendsList(
+    contactsViewModel: ContactsViewModel = viewModel(),
+    onDismiss: () -> Unit
+) {
+    val friends by contactsViewModel.friends.collectAsState()
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Friends List",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            if (friends.isEmpty()) {
+                Text(
+                    "No friends yet",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 400.dp)
+                ) {
+                    items(
+                        items = friends,
+                        key = { it.id }
+                    ) { friend ->
+                        ListItem(
+                            headlineContent = { 
+                                Text("${friend.firstName} ${friend.lastName}")
+                            },
+                            supportingContent = {
+                                Text(
+                                    friend.phoneNumber,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            leadingContent = {
+                                Icon(
+                                    Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            trailingContent = {
+                                IconButton(
+                                    onClick = {
+                                        contactsViewModel.removeFriend(friend.id)
+                                        Toast.makeText(
+                                            context,
+                                            "Removed ${friend.firstName} from friends",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Clear,
+                                        contentDescription = "Remove friend",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                            }
+                        )
+                        Divider()
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
 } 

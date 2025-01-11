@@ -39,6 +39,13 @@ class ContactsViewModel private constructor(
     private val _isSearching = MutableStateFlow(false)
     val isSearching: StateFlow<Boolean> = _isSearching
     
+    private val _friends = MutableStateFlow<List<UserProfile>>(emptyList())
+    val friends: StateFlow<List<UserProfile>> = _friends
+    
+    init {
+        fetchFriends()
+    }
+    
     fun syncContacts() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -208,6 +215,79 @@ class ContactsViewModel private constructor(
                 authViewModel.fetchFriendsCount()
             } catch (e: Exception) {
                 _error.value = "Failed to decline friend request: ${e.message}"
+            }
+        }
+    }
+    
+    fun fetchFriends() {
+        viewModelScope.launch {
+            try {
+                val currentUser = FirebaseAuth.getInstance().currentUser
+                    ?: throw Exception("Not logged in")
+
+                val friendships = FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(currentUser.uid)
+                    .collection("friendships")
+                    .whereEqualTo("status", "accepted")
+                    .get()
+                    .await()
+
+                val friendIds = friendships.documents.map { it.id }
+                
+                val friendProfiles = friendIds.mapNotNull { friendId ->
+                    FirebaseFirestore.getInstance()
+                        .collection("users")
+                        .document(friendId)
+                        .get()
+                        .await()
+                        .let { doc ->
+                            if (doc.exists()) {
+                                UserProfile(
+                                    id = doc.id,
+                                    firstName = doc.getString("firstName") ?: "",
+                                    lastName = doc.getString("lastName") ?: "",
+                                    phoneNumber = doc.getString("phoneNumber") ?: ""
+                                )
+                            } else null
+                        }
+                }
+                
+                _friends.value = friendProfiles
+            } catch (e: Exception) {
+                _error.value = "Failed to fetch friends: ${e.message}"
+            }
+        }
+    }
+    
+    fun removeFriend(friendId: String) {
+        viewModelScope.launch {
+            try {
+                val currentUser = FirebaseAuth.getInstance().currentUser
+                    ?: throw Exception("Not logged in")
+
+                // Delete friendship documents for both users
+                FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(currentUser.uid)
+                    .collection("friendships")
+                    .document(friendId)
+                    .delete()
+                    .await()
+
+                FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(friendId)
+                    .collection("friendships")
+                    .document(currentUser.uid)
+                    .delete()
+                    .await()
+
+                // Refresh friends list and update count
+                fetchFriends()
+                authViewModel.fetchFriendsCount()
+            } catch (e: Exception) {
+                _error.value = "Failed to remove friend: ${e.message}"
             }
         }
     }
