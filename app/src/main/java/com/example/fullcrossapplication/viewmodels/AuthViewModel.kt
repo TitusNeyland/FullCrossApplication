@@ -72,4 +72,26 @@ class AuthViewModel(
     fun clearError() {
         _error.value = null
     }
+
+    fun changePassword(currentPassword: String, newPassword: String, onComplete: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            
+            repository.changePassword(currentPassword, newPassword)
+                .onSuccess {
+                    onComplete(true)
+                }
+                .onFailure { exception ->
+                    _error.value = exception.message ?: "Failed to change password"
+                    onComplete(false)
+                }
+            
+            _isLoading.value = false
+        }
+    }
+
+    fun setError(message: String) {
+        _error.value = message
+    }
 } 
