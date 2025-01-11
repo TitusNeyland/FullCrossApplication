@@ -162,7 +162,7 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                         }
                     }
                 }
-                // Show bible versions
+                // Show bible versions and verse of the day
                 else -> {
                     Column {
                         // Add search field
@@ -182,7 +182,73 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                             singleLine = true
                         )
 
-                        // Filter bibles based on search query
+                        // Verse of the Day Card
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.1f)
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Verse of the Day",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    IconButton(
+                                        onClick = { viewModel.refreshVerseOfDay() },
+                                        modifier = Modifier.size(24.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Refresh,
+                                            contentDescription = "Refresh verse",
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                                
+                                if (isLoadingVerse) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier
+                                            .padding(16.dp)
+                                            .size(24.dp)
+                                    )
+                                } else if (verseError != null) {
+                                    Text(
+                                        text = verseError ?: "Error loading verse",
+                                        color = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.padding(16.dp)
+                                    )
+                                } else {
+                                    verseOfDay?.let { verse ->
+                                        Text(
+                                            text = verse.text,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier.padding(vertical = 8.dp)
+                                        )
+                                        Text(
+                                            text = "- ${verse.reference}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontStyle = FontStyle.Italic
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        // Bible versions list
                         LazyColumn {
                             items(bibles.filter { bible ->
                                 searchQuery.isEmpty() || bible.name.contains(searchQuery, ignoreCase = true) ||
@@ -216,71 +282,6 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                         .align(Alignment.Center)
                         .padding(16.dp)
                 )
-            }
-        }
-
-        // Move Verse of the Day to bottom
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Verse of the Day",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    IconButton(
-                        onClick = { viewModel.refreshVerseOfDay() },
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh verse",
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-
-                if (isLoadingVerse) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .size(20.dp)
-                    )
-                } else if (verseError != null) {
-                    Text(
-                        text = verseError ?: "An error occurred",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(4.dp),
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                } else {
-                    verseOfDay?.let { verse ->
-                        Text(
-                            text = verse.text,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(vertical = 4.dp),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "- ${verse.reference}",
-                            style = MaterialTheme.typography.bodySmall,
-                            fontStyle = FontStyle.Italic,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
-                }
             }
         }
     }
