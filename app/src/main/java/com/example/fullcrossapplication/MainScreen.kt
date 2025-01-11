@@ -30,6 +30,7 @@ import com.example.fullcrossapplication.screens.WatchScreen
 import androidx.compose.material3.Button
 import androidx.compose.ui.unit.dp
 import com.example.fullcrossapplication.screens.ContactSupportScreen
+import com.example.fullcrossapplication.screens.HelpAndFaqScreen
 
 enum class BottomNavItem(val title: String, val icon: ImageVector) {
     Read("Read", Icons.Default.Book),
@@ -46,6 +47,7 @@ fun MainScreen(
     var selectedItem by remember { mutableStateOf(BottomNavItem.Watch) }
     var showLoginScreen by remember { mutableStateOf(false) }
     var showContactSupport by remember { mutableStateOf(false) }
+    var showHelpAndFaq by remember { mutableStateOf(false) }
 
     if (showLoginScreen) {
         LoginScreen(
@@ -58,6 +60,13 @@ fun MainScreen(
     if (showContactSupport) {
         ContactSupportScreen(
             onNavigateBack = { showContactSupport = false }
+        )
+        return
+    }
+
+    if (showHelpAndFaq) {
+        HelpAndFaqScreen(
+            onNavigateBack = { showHelpAndFaq = false }
         )
         return
     }
@@ -88,7 +97,8 @@ fun MainScreen(
                 BottomNavItem.Donate -> DonateScreen()
                 BottomNavItem.Account -> AccountScreen(
                     onLogout = onSignOut,
-                    onNavigateToSupport = { showContactSupport = true }
+                    onNavigateToSupport = { showContactSupport = true },
+                    onNavigateToHelpAndFaq = { showHelpAndFaq = true }
                 )
             }
         }

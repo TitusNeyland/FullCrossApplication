@@ -32,7 +32,8 @@ import androidx.compose.ui.platform.LocalContext
 fun AccountScreen(
     onLogout: () -> Unit = {},
     authViewModel: AuthViewModel = viewModel(),
-    onNavigateToSupport: () -> Unit
+    onNavigateToSupport: () -> Unit,
+    onNavigateToHelpAndFaq: () -> Unit
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showNotificationDialog by remember { mutableStateOf(false) }
@@ -208,7 +209,7 @@ fun AccountScreen(
                     contentDescription = "Help & FAQ"
                 )
             },
-            modifier = Modifier.clickable { /* Handle help click */ }
+            modifier = Modifier.clickable { onNavigateToHelpAndFaq() }
         )
 
         ListItem(
