@@ -193,7 +193,7 @@ fun DonateScreen() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "a cheerful giver",
+                    text = "\"Honor the LORD with your wealth and with the firstfruits of all your produce; then your barns will be filled with plenty, and your vats will be bursting with wine.\"",
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontStyle = FontStyle.Italic
                     ),
@@ -201,7 +201,7 @@ fun DonateScreen() {
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
                 Text(
-                    text = "2 Corinthians 9:7",
+                    text = "Proverbs 3:9-10",
                     style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier.padding(top = 8.dp),
                     color = MaterialTheme.colorScheme.primary
