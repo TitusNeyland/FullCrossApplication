@@ -2,12 +2,14 @@ package com.example.fullcrossapplication.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -22,6 +24,7 @@ fun EditProfileScreen(
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
     var firstName by remember { mutableStateOf(currentUser?.firstName ?: "") }
     var lastName by remember { mutableStateOf(currentUser?.lastName ?: "") }
+    var phoneNumber by remember { mutableStateOf(currentUser?.phoneNumber ?: "") }
     var email by remember { mutableStateOf(currentUser?.email ?: "") }
     var showSuccessDialog by remember { mutableStateOf(false) }
     
@@ -80,6 +83,21 @@ fun EditProfileScreen(
             )
 
             OutlinedTextField(
+                value = phoneNumber,
+                onValueChange = { 
+                    phoneNumber = it
+                    authViewModel.clearError()
+                },
+                label = { Text("Phone Number") },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Phone
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            )
+
+            OutlinedTextField(
                 value = email,
                 onValueChange = { 
                     email = it
@@ -95,13 +113,18 @@ fun EditProfileScreen(
             Button(
                 onClick = {
                     if (validateInputs(firstName, lastName)) {
-                        authViewModel.updateProfile(firstName, lastName) { success ->
-                            if (success) {
-                                showSuccessDialog = true
+                        authViewModel.updateProfile(
+                            firstName,
+                            lastName,
+                            phoneNumber,
+                            onComplete = { success ->
+                                if (success) {
+                                    showSuccessDialog = true
+                                }
                             }
-                        }
+                        )
                     } else {
-                        authViewModel.setError("Please fill in all fields")
+                        authViewModel.setError("Please fill in all required fields")
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),

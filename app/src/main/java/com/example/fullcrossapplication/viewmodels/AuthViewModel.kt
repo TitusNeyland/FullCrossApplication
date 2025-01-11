@@ -95,12 +95,17 @@ class AuthViewModel(
         _error.value = message
     }
 
-    fun updateProfile(firstName: String, lastName: String, onComplete: (Boolean) -> Unit) {
+    fun updateProfile(
+        firstName: String,
+        lastName: String,
+        phoneNumber: String,
+        onComplete: (Boolean) -> Unit
+    ) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             
-            repository.updateUserProfile(firstName, lastName)
+            repository.updateUserProfile(firstName, lastName, phoneNumber)
                 .onSuccess {
                     _currentUser.value = repository.getCurrentUser()
                     onComplete(true)
