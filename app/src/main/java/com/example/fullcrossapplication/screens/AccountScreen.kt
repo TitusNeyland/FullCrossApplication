@@ -118,43 +118,45 @@ fun AccountScreen(
                 .fillMaxWidth()
                 .padding(bottom = 16.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateToFriends() }
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Column {
                 Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showFriendsList = true }
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.People,
-                        contentDescription = "Friends",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Column(
-                        modifier = Modifier.padding(start = 16.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Friends",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                        Icon(
+                            imageVector = Icons.Default.People,
+                            contentDescription = "Friends",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
                         )
-                        Text(
-                            text = "$friendsCount friends",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Column(
+                            modifier = Modifier.padding(start = 16.dp)
+                        ) {
+                            Text(
+                                text = "Friends",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "$friendsCount friends",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = "View Friends",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
-                Icon(
-                    Icons.Default.ChevronRight,
-                    contentDescription = "View Friends",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
 
@@ -313,21 +315,6 @@ fun AccountScreen(
                 modifier = Modifier.padding(end = 8.dp)
             )
             Text("Logout")
-        }
-
-        Button(
-            onClick = { showFriendsList = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-        ) {
-            Icon(
-                Icons.Default.People,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Manage Friends")
         }
     }
 

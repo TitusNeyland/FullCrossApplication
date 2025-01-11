@@ -41,6 +41,9 @@ class FriendsViewModel : ViewModel() {
                 
                 friendshipsSnapshot.documents.forEach { doc ->
                     val friendId = doc.id
+                    // Skip if somehow the user is in their own friends list
+                    if (friendId == currentUserId) return@forEach
+                    
                     val status = when(doc.getString("status")) {
                         "pending" -> FriendshipStatus.PENDING
                         "accepted" -> FriendshipStatus.ACCEPTED
@@ -81,6 +84,12 @@ class FriendsViewModel : ViewModel() {
             try {
                 val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
                     ?: throw Exception("User not logged in")
+                
+                // Prevent self-friend requests
+                if (currentUserId == userId) {
+                    _error.value = "You cannot send a friend request to yourself"
+                    return@launch
+                }
                 
                 val timestamp = System.currentTimeMillis()
                 
