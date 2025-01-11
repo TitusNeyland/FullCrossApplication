@@ -72,6 +72,8 @@ import androidx.compose.material3.TextButton
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -475,12 +477,14 @@ private fun SocialConnectionDialog(
     val contacts by contactsViewModel.contacts.collectAsState()
     val isLoading by contactsViewModel.isLoading.collectAsState()
     val error by contactsViewModel.error.collectAsState()
+    var isSyncExpanded by remember { mutableStateOf(false) }
     
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
             contactsViewModel.syncContacts()
+            isSyncExpanded = true  // Auto-expand when contacts are synced
         } else {
             Toast.makeText(
                 context,
@@ -500,6 +504,7 @@ private fun SocialConnectionDialog(
         },
         text = {
             Column {
+                // Sync Contacts Header
                 ListItem(
                     headlineContent = { Text("Sync Contacts") },
                     supportingContent = { Text("Find friends who are already using the app") },
@@ -517,8 +522,22 @@ private fun SocialConnectionDialog(
                             )
                         }
                     },
+                    trailingContent = {
+                        if (contacts.isNotEmpty()) {
+                            IconButton(onClick = { isSyncExpanded = !isSyncExpanded }) {
+                                Icon(
+                                    if (isSyncExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = if (isSyncExpanded) "Collapse" else "Expand"
+                                )
+                            }
+                        }
+                    },
                     modifier = Modifier.clickable {
-                        permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                        if (contacts.isEmpty()) {
+                            permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                        } else {
+                            isSyncExpanded = !isSyncExpanded
+                        }
                     }
                 )
                 
@@ -531,7 +550,8 @@ private fun SocialConnectionDialog(
                     )
                 }
                 
-                if (contacts.isNotEmpty()) {
+                // Contacts List (Expandable)
+                if (contacts.isNotEmpty() && isSyncExpanded) {
                     Text(
                         "Contacts (${contacts.size})",
                         style = MaterialTheme.typography.titleSmall,
@@ -575,7 +595,6 @@ private fun SocialConnectionDialog(
                                     )
                                 },
                                 modifier = Modifier.clickable(enabled = !contact.isAppUser) {
-                                    // Handle adding friend
                                     if (!contact.isAppUser) {
                                         // TODO: Implement invite friend functionality
                                     }
@@ -584,8 +603,8 @@ private fun SocialConnectionDialog(
                         }
                     }
                 }
-                
-                // Rest of the dialog content...
+
+                // Add other sections (Refer Friends, Add Friends) here...
             }
         },
         confirmButton = {
