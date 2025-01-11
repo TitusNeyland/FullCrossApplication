@@ -57,6 +57,15 @@ import com.example.fullcrossapplication.data.NoteType
 import com.example.fullcrossapplication.viewmodels.NotesViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import android.widget.Toast
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

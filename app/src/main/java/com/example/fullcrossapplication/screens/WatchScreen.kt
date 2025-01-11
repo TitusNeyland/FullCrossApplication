@@ -89,6 +89,9 @@ import com.example.fullcrossapplication.viewmodels.NotificationsViewModel
 import androidx.compose.material3.Badge
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.fullcrossapplication.data.NotificationType
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Person
+import com.example.fullcrossapplication.data.FriendshipStatus
 
 data class LiveStream(
     val title: String,
@@ -686,51 +689,83 @@ private fun SocialConnectionDialog(
                         }
                     }
                     
-                    if (searchResults.isNotEmpty()) {
-                        LazyColumn(
-                            modifier = Modifier
-                                .height(200.dp)
-                                .padding(horizontal = 16.dp)
-                        ) {
-                            items(searchResults) { user ->
-                                ListItem(
-                                    headlineContent = { Text(user.fullName) },
-                                    supportingContent = { 
-                                        Text(
-                                            user.phoneNumber.takeIf { it.isNotEmpty() }
-                                                ?.let { formatPhoneNumber(it) } ?: "No phone number"
-                                        )
-                                    },
-                                    leadingContent = {
-                                        Icon(
-                                            Icons.Default.PersonAdd,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
-                                    },
-                                    modifier = Modifier.clickable {
-                                        contactsViewModel.sendFriendRequest(
-                                            toUserId = user.id,
-                                            toUserName = user.fullName
-                                        )
-                                        Toast.makeText(
-                                            context,
-                                            "Friend request sent to ${user.firstName}",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                )
+                    if (searchQuery.length >= 2) {
+                        if (isSearching) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            )
+                        } else if (searchResults.isNotEmpty()) {
+                            LazyColumn {
+                                items(searchResults) { user ->
+                                    ListItem(
+                                        headlineContent = { Text(user.fullName) },
+                                        supportingContent = { Text(user.phoneNumber) },
+                                        leadingContent = {
+                                            Icon(
+                                                Icons.Default.Person,
+                                                contentDescription = null
+                                            )
+                                        },
+                                        trailingContent = {
+                                            when (user.friendshipStatus) {
+                                                FriendshipStatus.NONE -> {
+                                                    TextButton(
+                                                        onClick = {
+                                                            contactsViewModel.sendFriendRequest(
+                                                                toUserId = user.id,
+                                                                toUserName = user.fullName
+                                                            )
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Friend request sent to ${user.firstName}",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        }
+                                                    ) {
+                                                        Text("Add Friend")
+                                                    }
+                                                }
+                                                FriendshipStatus.PENDING -> {
+                                                    Text(
+                                                        "Request Pending",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                                FriendshipStatus.ACCEPTED -> {
+                                                    Icon(
+                                                        Icons.Default.Check,
+                                                        contentDescription = "Friends",
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                                FriendshipStatus.DECLINED -> {
+                                                    TextButton(
+                                                        onClick = {
+                                                            contactsViewModel.sendFriendRequest(
+                                                                toUserId = user.id,
+                                                                toUserName = user.fullName
+                                                            )
+                                                        }
+                                                    ) {
+                                                        Text("Try Again")
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        modifier = Modifier.clickable { }
+                                    )
+                                }
                             }
+                        } else {
+                            Text(
+                                "No users found",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                textAlign = TextAlign.Center
+                            )
                         }
-                    } else if (searchQuery.length >= 2 && !isSearching) {
-                        Text(
-                            "No users found",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
 
