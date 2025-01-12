@@ -29,6 +29,7 @@ class NotificationsViewModel : ViewModel() {
                 val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
                     ?: return@launch
 
+                // Set up real-time listener for notifications
                 FirebaseFirestore.getInstance()
                     .collection("users")
                     .document(currentUserId)
@@ -40,16 +41,20 @@ class NotificationsViewModel : ViewModel() {
                         }
 
                         val notificationsList = snapshot?.documents?.mapNotNull { doc ->
-                            Notification(
-                                id = doc.id,
-                                type = NotificationType.valueOf(
-                                    doc.getString("type") ?: NotificationType.FRIEND_REQUEST.name
-                                ),
-                                fromUserId = doc.getString("fromUserId") ?: "",
-                                fromUserName = doc.getString("fromUserName") ?: "",
-                                timestamp = doc.getLong("timestamp") ?: 0L,
-                                read = doc.getBoolean("read") ?: false
-                            )
+                            try {
+                                Notification(
+                                    id = doc.id,
+                                    type = NotificationType.valueOf(
+                                        doc.getString("type") ?: NotificationType.FRIEND_REQUEST.name
+                                    ),
+                                    fromUserId = doc.getString("fromUserId") ?: "",
+                                    fromUserName = doc.getString("fromUserName") ?: "",
+                                    timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis(),
+                                    read = doc.getBoolean("read") ?: false
+                                )
+                            } catch (e: Exception) {
+                                null
+                            }
                         } ?: emptyList()
 
                         _notifications.value = notificationsList
