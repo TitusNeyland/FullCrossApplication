@@ -4,9 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fullcrossapplication.data.FirebaseRepository
 import com.example.fullcrossapplication.data.User
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class AuthViewModel(
     private val repository: FirebaseRepository = FirebaseRepository()
@@ -19,6 +23,9 @@ class AuthViewModel(
 
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
+
+    private val _friendsCount = MutableStateFlow(0)
+    val friendsCount: StateFlow<Int> = _friendsCount
 
     init {
         checkCurrentUser()
@@ -116,6 +123,28 @@ class AuthViewModel(
                 }
             
             _isLoading.value = false
+        }
+    }
+
+    fun fetchFriendsCount() {
+        viewModelScope.launch {
+            try {
+                val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
+                
+                // Query friendships collection and count only accepted friendships
+                val snapshot = FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(currentUserId)
+                    .collection("friendships")
+                    .whereEqualTo("status", "accepted")
+                    .get()
+                    .await()
+                
+                _friendsCount.value = snapshot.size()
+            } catch (e: Exception) {
+                // Handle error
+                _friendsCount.value = 0
+            }
         }
     }
 } 

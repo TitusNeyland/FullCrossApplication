@@ -1,10 +1,15 @@
 package com.example.fullcrossapplication.screens
 
+import android.Manifest
+import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +19,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -22,25 +29,47 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ContactPhone
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,13 +79,25 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.fullcrossapplication.R
+import com.example.fullcrossapplication.data.FriendshipStatus
+import com.example.fullcrossapplication.data.NotificationType
+import com.example.fullcrossapplication.viewmodels.AuthViewModel
+import com.example.fullcrossapplication.viewmodels.ContactsViewModel
+import com.example.fullcrossapplication.viewmodels.NotificationsViewModel
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+
+enum class WatchScreenTab {
+    WATCH, FRIENDS
+}
 
 data class LiveStream(
     val title: String,
@@ -70,9 +111,22 @@ data class LiveStream(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WatchScreen() {
+fun WatchScreen(
+    notificationsViewModel: NotificationsViewModel = viewModel(),
+    authViewModel: AuthViewModel = viewModel()
+) {
+    var selectedTab by remember { mutableStateOf(WatchScreenTab.WATCH) }
+    var showSocialDialog by remember { mutableStateOf(false) }
     val viewerCount = 128 // Example viewer count
     val context = LocalContext.current
+    val unreadCount by notificationsViewModel.unreadCount.collectAsStateWithLifecycle()
+    val contactsViewModel: ContactsViewModel = viewModel(
+        factory = ContactsViewModel.provideFactory(
+            application = context.applicationContext as Application,
+            authViewModel = authViewModel
+        )
+    )
+    val pendingFriendRequests by contactsViewModel.pendingFriendRequests.collectAsState()
 
     Column(
         modifier = Modifier
@@ -102,6 +156,29 @@ fun WatchScreen() {
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
+                }
+            },
+            actions = {
+                Box {
+                    IconButton(
+                        onClick = { showSocialDialog = true },
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.People,
+                            contentDescription = "Connect with Friends",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    if (unreadCount > 0) {
+                        Badge(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .offset(x = (-4).dp, y = 4.dp)
+                        ) {
+                            Text(unreadCount.toString())
+                        }
+                    }
                 }
             },
             colors = TopAppBarDefaults.largeTopAppBarColors(
@@ -145,6 +222,61 @@ fun WatchScreen() {
                 UpcomingStreamCard(stream = stream)
             }
         }
+
+        NavigationBar {
+            NavigationBarItem(
+                selected = selectedTab == WatchScreenTab.WATCH,
+                onClick = { selectedTab = WatchScreenTab.WATCH },
+                icon = { Icon(Icons.Default.PlayCircle, contentDescription = "Watch") },
+                label = { Text("Watch") }
+            )
+            
+            NavigationBarItem(
+                selected = selectedTab == WatchScreenTab.FRIENDS,
+                onClick = { selectedTab = WatchScreenTab.FRIENDS },
+                icon = {
+                    Box {
+                        Icon(Icons.Default.People, contentDescription = "Friends")
+                        if (pendingFriendRequests.isNotEmpty()) {
+                            Badge(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 4.dp, y = (-4).dp)
+                            ) {
+                                // Empty badge, just showing the dot
+                            }
+                        }
+                    }
+                },
+                label = { Text("Friends") }
+            )
+        }
+    }
+
+    if (showSocialDialog) {
+        SocialConnectionDialog(
+            onDismiss = { showSocialDialog = false },
+            onSyncContacts = {
+                // TODO: Implement contact sync
+                Toast.makeText(context, "Syncing contacts...", Toast.LENGTH_SHORT).show()
+                showSocialDialog = false
+            },
+            onReferContacts = {
+                val shareIntent = Intent().apply {
+                    action = Intent.ACTION_SEND
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, "Join me on our church app! [Your app link here]")
+                }
+                context.startActivity(Intent.createChooser(shareIntent, "Refer Friends"))
+                showSocialDialog = false
+            },
+            onAddFriends = {
+                // TODO: Implement add friends
+                Toast.makeText(context, "Add friends feature coming soon!", Toast.LENGTH_SHORT).show()
+                showSocialDialog = false
+            }
+        )
     }
 }
 
@@ -403,5 +535,404 @@ private fun formatDuration(duration: Duration): String {
     return when {
         hours > 0 -> "${hours}h ${minutes}m"
         else -> "${minutes}m"
+    }
+}
+
+@Composable
+private fun SocialConnectionDialog(
+    onDismiss: () -> Unit,
+    onSyncContacts: () -> Unit,
+    onReferContacts: () -> Unit,
+    onAddFriends: () -> Unit,
+    contactsViewModel: ContactsViewModel = viewModel(),
+    notificationsViewModel: NotificationsViewModel = viewModel()
+) {
+    val context = LocalContext.current
+    val contacts by contactsViewModel.contacts.collectAsState()
+    val isLoading by contactsViewModel.isLoading.collectAsState()
+    val error by contactsViewModel.error.collectAsState()
+    var isSyncExpanded by remember { mutableStateOf(false) }
+    var isFindFriendsExpanded by remember { mutableStateOf(false) }
+    val searchResults by contactsViewModel.searchResults.collectAsState()
+    val isSearching by contactsViewModel.isSearching.collectAsState()
+    var searchQuery by remember { mutableStateOf("") }
+    val notifications by notificationsViewModel.notifications.collectAsStateWithLifecycle()
+    val friendRequests = notifications.filter { 
+        it.type == NotificationType.FRIEND_REQUEST && !it.read 
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            contactsViewModel.syncContacts()
+            isSyncExpanded = true
+        } else {
+            Toast.makeText(
+                context,
+                "Permission needed to sync contacts",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Connect with Friends",
+                style = MaterialTheme.typography.headlineSmall
+            )
+        },
+        text = {
+            Column {
+                // Friend Requests Section (if there are any)
+                if (friendRequests.isNotEmpty()) {
+                    Text(
+                        "Friend Requests (${friendRequests.size})",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .heightIn(max = 200.dp)
+                            .fillMaxWidth()
+                    ) {
+                        items(friendRequests) { request ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                ListItem(
+                                    headlineContent = { 
+                                        Text(request.fromUserName)
+                                    },
+                                    supportingContent = {
+                                        Text(
+                                            "Sent you a friend request",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    trailingContent = {
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            TextButton(
+                                                onClick = {
+                                                    // Accept friend request
+                                                    contactsViewModel.acceptFriendRequest(request.fromUserId)
+                                                    notificationsViewModel.markAsRead(request.id)
+                                                }
+                                            ) {
+                                                Text("Accept")
+                                            }
+                                            TextButton(
+                                                onClick = {
+                                                    // Decline friend request
+                                                    contactsViewModel.declineFriendRequest(request.fromUserId)
+                                                    notificationsViewModel.markAsRead(request.id)
+                                                }
+                                            ) {
+                                                Text("Decline")
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Divider(
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
+
+                // Existing Find Friends Section
+                ListItem(
+                    headlineContent = { Text("Find Friends") },
+                    supportingContent = { Text("Search for other members") },
+                    leadingContent = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    trailingContent = {
+                        IconButton(onClick = { isFindFriendsExpanded = !isFindFriendsExpanded }) {
+                            Icon(
+                                if (isFindFriendsExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (isFindFriendsExpanded) "Collapse" else "Expand"
+                            )
+                        }
+                    },
+                    modifier = Modifier.clickable { isFindFriendsExpanded = !isFindFriendsExpanded }
+                )
+                
+                if (isFindFriendsExpanded) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { 
+                            searchQuery = it
+                            contactsViewModel.searchUsers(it)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        placeholder = { 
+                            Text(
+                                "Search by name or phone number",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(
+                                    onClick = { 
+                                        searchQuery = ""
+                                        contactsViewModel.clearSearch()
+                                    }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Clear,
+                                        contentDescription = "Clear search"
+                                    )
+                                }
+                            }
+                        },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyMedium
+                    )
+                    
+                    if (isSearching) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    }
+                    
+                    if (searchQuery.length >= 2) {
+                        if (isSearching) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            )
+                        } else if (searchResults.isNotEmpty()) {
+                            LazyColumn {
+                                items(searchResults) { user ->
+                                    ListItem(
+                                        headlineContent = { Text(user.fullName) },
+                                        supportingContent = { Text(user.phoneNumber) },
+                                        leadingContent = {
+                                            Icon(
+                                                Icons.Default.Person,
+                                                contentDescription = null
+                                            )
+                                        },
+                                        trailingContent = {
+                                            when (user.friendshipStatus) {
+                                                FriendshipStatus.NONE -> {
+                                                    TextButton(
+                                                        onClick = {
+                                                            contactsViewModel.sendFriendRequest(
+                                                                toUserId = user.id,
+                                                                toUserName = user.fullName
+                                                            )
+                                                            Toast.makeText(
+                                                                context,
+                                                                "Friend request sent to ${user.firstName}",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        }
+                                                    ) {
+                                                        Text("Add Friend")
+                                                    }
+                                                }
+                                                FriendshipStatus.PENDING -> {
+                                                    Text(
+                                                        "Request Pending",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                                FriendshipStatus.ACCEPTED -> {
+                                                    Icon(
+                                                        Icons.Default.Check,
+                                                        contentDescription = "Friends",
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                                FriendshipStatus.DECLINED -> {
+                                                    TextButton(
+                                                        onClick = {
+                                                            contactsViewModel.sendFriendRequest(
+                                                                toUserId = user.id,
+                                                                toUserName = user.fullName
+                                                            )
+                                                        }
+                                                    ) {
+                                                        Text("Try Again")
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        modifier = Modifier.clickable { }
+                                    )
+                                }
+                            }
+                        } else {
+                            Text(
+                                "No users found",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                
+                // Sync Contacts Section (Now Second)
+                ListItem(
+                    headlineContent = { Text("Sync Contacts") },
+                    supportingContent = { Text("Find friends who are already using the app") },
+                    leadingContent = {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.ContactPhone,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    trailingContent = {
+                        if (contacts.isNotEmpty()) {
+                            IconButton(onClick = { isSyncExpanded = !isSyncExpanded }) {
+                                Icon(
+                                    if (isSyncExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = if (isSyncExpanded) "Collapse" else "Expand"
+                                )
+                            }
+                        }
+                    },
+                    modifier = Modifier.clickable {
+                        if (contacts.isEmpty()) {
+                            permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                        } else {
+                            isSyncExpanded = !isSyncExpanded
+                        }
+                    }
+                )
+                
+                if (error != null) {
+                    Text(
+                        text = error!!,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+                
+                // Contacts List (Expandable)
+                if (contacts.isNotEmpty() && isSyncExpanded) {
+                    Text(
+                        "Contacts (${contacts.size})",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(16.dp)
+                    )
+                    
+                    LazyColumn(
+                        modifier = Modifier.height(200.dp)
+                    ) {
+                        items(contacts) { contact ->
+                            ListItem(
+                                headlineContent = { 
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(contact.name)
+                                        if (contact.isAppUser) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .padding(start = 8.dp)
+                                                    .size(8.dp)
+                                                    .background(
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        shape = CircleShape
+                                                    )
+                                            )
+                                        }
+                                    }
+                                },
+                                supportingContent = { 
+                                    contact.phoneNumber?.let { Text(it) }
+                                },
+                                leadingContent = {
+                                    Icon(
+                                        Icons.Default.PersonAdd,
+                                        contentDescription = null,
+                                        tint = if (contact.isAppUser) 
+                                            MaterialTheme.colorScheme.primary
+                                        else 
+                                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                },
+                                modifier = Modifier.clickable(enabled = !contact.isAppUser) {
+                                    if (!contact.isAppUser) {
+                                        // TODO: Implement invite friend functionality
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
+            }
+        }
+    )
+}
+
+private fun formatPhoneNumber(number: String): String {
+    return try {
+        val cleaned = number.replace("[^0-9]".toRegex(), "")
+        when (cleaned.length) {
+            10 -> "(${cleaned.substring(0,3)}) ${cleaned.substring(3,6)}-${cleaned.substring(6)}"
+            else -> number
+        }
+    } catch (e: Exception) {
+        number
     }
 } 
