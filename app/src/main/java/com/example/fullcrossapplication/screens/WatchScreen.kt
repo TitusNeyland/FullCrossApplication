@@ -91,6 +91,7 @@ import com.example.fullcrossapplication.data.NotificationType
 import com.example.fullcrossapplication.viewmodels.AuthViewModel
 import com.example.fullcrossapplication.viewmodels.ContactsViewModel
 import com.example.fullcrossapplication.viewmodels.NotificationsViewModel
+import com.example.fullcrossapplication.viewmodels.WatchViewModel
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -428,7 +429,28 @@ private fun FeaturedStreamCard(stream: LiveStream) {
 }
 
 @Composable
-private fun UpcomingStreamCard(stream: LiveStream) {
+private fun UpcomingStreamCard(
+    stream: LiveStream,
+    viewModel: WatchViewModel = viewModel()
+) {
+    val context = LocalContext.current
+    var showPermissionDialog by remember { mutableStateOf(false) }
+    
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.values.all { it }
+        if (allGranted) {
+            viewModel.setReminder(context, stream)
+        } else {
+            Toast.makeText(
+                context,
+                "Calendar permissions are needed to set reminders",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -483,7 +505,16 @@ private fun UpcomingStreamCard(stream: LiveStream) {
                 )
             }
 
-            IconButton(onClick = { /* Handle reminder */ }) {
+            IconButton(
+                onClick = {
+                    permissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.READ_CALENDAR,
+                            Manifest.permission.WRITE_CALENDAR
+                        )
+                    )
+                }
+            ) {
                 Icon(
                     imageVector = Icons.Default.Notifications,
                     contentDescription = "Set reminder",
@@ -491,6 +522,34 @@ private fun UpcomingStreamCard(stream: LiveStream) {
                 )
             }
         }
+    }
+
+    if (showPermissionDialog) {
+        AlertDialog(
+            onDismissRequest = { showPermissionDialog = false },
+            title = { Text("Calendar Permission") },
+            text = { Text("Calendar permission is needed to set reminders for upcoming services.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showPermissionDialog = false
+                        permissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.READ_CALENDAR,
+                                Manifest.permission.WRITE_CALENDAR
+                            )
+                        )
+                    }
+                ) {
+                    Text("Grant Permission")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPermissionDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
