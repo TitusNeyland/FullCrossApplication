@@ -1,12 +1,16 @@
 package com.example.fullcrossapplication.viewmodels
 
 import android.app.Application
+import android.content.Context
+import android.content.Intent
+import android.provider.CalendarContract
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fullcrossapplication.data.BibleRepository
 import com.example.fullcrossapplication.data.NoteType
 import com.example.fullcrossapplication.data.VerseOfDay
+import com.example.fullcrossapplication.screens.LiveStream
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,6 +18,7 @@ import kotlinx.coroutines.launch
 import org.jsoup.Jsoup
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.TimeZone
 
 enum class ChatTab {
     CHAT, NOTES
@@ -168,6 +173,37 @@ class WatchViewModel(
     fun onNoteAdded(title: String, content: String) {
         addNote(title, content)
         hideNoteDialog()
+    }
+
+    fun setReminder(context: Context, stream: LiveStream) {
+        val intent = Intent(Intent.ACTION_INSERT).apply {
+            data = CalendarContract.Events.CONTENT_URI
+            putExtra(CalendarContract.Events.TITLE, stream.title)
+            putExtra(
+                CalendarContract.Events.DESCRIPTION, 
+                """
+                Join us for ${stream.title}
+                
+                Watch live at: https://www.facebook.com/profile.php?id=100079371798055
+                """.trimIndent()
+            )
+            putExtra(CalendarContract.Events.EVENT_LOCATION, "Facebook Live")
+            
+            // Convert LocalDateTime to milliseconds
+            val beginTime = stream.startTime.atZone(TimeZone.getDefault().toZoneId()).toInstant().toEpochMilli()
+            val endTime = beginTime + (stream.durationMinutes * 60 * 1000)
+            
+            putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, beginTime)
+            putExtra(CalendarContract.EXTRA_EVENT_END_TIME, endTime)
+            
+            // Add reminder 15 minutes before
+            putExtra(CalendarContract.Events.HAS_ALARM, 1)
+            putExtra(CalendarContract.Reminders.MINUTES, 15)
+            
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        }
+        
+        context.startActivity(intent)
     }
 }
 
