@@ -22,10 +22,14 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import com.example.fullcrossapplication.utils.BibleTextFormatter
+import android.content.Intent
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
+    val context = LocalContext.current
     val bibles by viewModel.bibles.collectAsStateWithLifecycle()
     val books by viewModel.books.collectAsStateWithLifecycle()
     val currentChapter by viewModel.currentChapter.collectAsStateWithLifecycle()
@@ -231,21 +235,63 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                                             fontWeight = FontWeight.Bold
                                         )
                                     }
-                                    IconButton(
-                                        onClick = { viewModel.refreshVerseOfDay() },
-                                        modifier = Modifier
-                                            .size(32.dp)
-                                            .background(
-                                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                                shape = CircleShape
-                                            )
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Refresh,
-                                            contentDescription = "Refresh verse",
-                                            modifier = Modifier.size(16.dp),
-                                            tint = MaterialTheme.colorScheme.primary
-                                        )
+                                        // Share button
+                                        IconButton(
+                                            onClick = {
+                                                val verseOfDay = viewModel.verseOfDay.value
+                                                if (verseOfDay != null) {
+                                                    val shareIntent = Intent().apply {
+                                                        action = Intent.ACTION_SEND
+                                                        type = "text/plain"
+                                                        putExtra(
+                                                            Intent.EXTRA_TEXT,
+                                                            """
+                                                            Verse of the Day:
+                                                            
+                                                            "${verseOfDay.text}"
+                                                            - ${verseOfDay.reference}
+                                                            
+                                                            Shared from the Full Cross App
+                                                            """.trimIndent()
+                                                        )
+                                                    }
+                                                    context.startActivity(Intent.createChooser(shareIntent, "Share Verse of the Day"))
+                                                }
+                                            },
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                                    shape = CircleShape
+                                                )
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Share,
+                                                contentDescription = "Share Verse of the Day",
+                                                modifier = Modifier.size(16.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
+                                        // Refresh button
+                                        IconButton(
+                                            onClick = { viewModel.refreshVerseOfDay() },
+                                            modifier = Modifier
+                                                .size(32.dp)
+                                                .background(
+                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                                    shape = CircleShape
+                                                )
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Refresh,
+                                                contentDescription = "Refresh verse",
+                                                modifier = Modifier.size(16.dp),
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
+                                        }
                                     }
                                 }
                                 
