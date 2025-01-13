@@ -14,13 +14,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Comment
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -32,6 +35,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -52,6 +57,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fullcrossapplication.data.Note
 import com.example.fullcrossapplication.data.NoteType
+import com.example.fullcrossapplication.data.NotesTab
+import com.example.fullcrossapplication.data.Discussion
 import com.example.fullcrossapplication.viewmodels.NotesViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -60,10 +67,12 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
     var showAddNoteDialog by remember { mutableStateOf(false) }
+    var showAddDiscussionDialog by remember { mutableStateOf(false) }
     val selectedDate by viewModel.selectedDate.collectAsStateWithLifecycle()
     val notes by viewModel.notes.collectAsStateWithLifecycle()
     val datesWithNotes by viewModel.datesWithNotes.collectAsStateWithLifecycle()
     var expandedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var selectedTab by remember { mutableStateOf(NotesTab.PERSONAL_NOTES) }
 
     LaunchedEffect(datesWithNotes) {
         if (datesWithNotes.contains(LocalDate.now()) && expandedDate != LocalDate.now()) {
@@ -73,7 +82,7 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Enhanced Header
+        // Enhanced Header with Tabs
         TopAppBar(
             title = {
                 Column {
@@ -90,12 +99,18 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
             },
             actions = {
                 IconButton(
-                    onClick = { showAddNoteDialog = true },
+                    onClick = { 
+                        if (selectedTab == NotesTab.PERSONAL_NOTES) {
+                            showAddNoteDialog = true
+                        } else {
+                            showAddDiscussionDialog = true
+                        }
+                    },
                     modifier = Modifier.padding(end = 8.dp)
                 ) {
                     Icon(
                         Icons.Default.Add,
-                        contentDescription = "Add Note",
+                        contentDescription = if (selectedTab == NotesTab.PERSONAL_NOTES) "Add Note" else "Start Discussion",
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -105,32 +120,57 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
             )
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Dates List with enhanced styling
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
+        // Tab Row
+        TabRow(
+            selectedTabIndex = selectedTab.ordinal,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            items(datesWithNotes.toList().sortedDescending()) { date ->
-                DateCard(
-                    date = date,
-                    isExpanded = date == expandedDate,
-                    notes = if (date == expandedDate) notes else emptyList(),
-                    onExpandClick = {
-                        if (expandedDate == date) {
-                            expandedDate = null
-                        } else {
-                            expandedDate = date
-                            viewModel.setSelectedDate(date)
-                        }
-                    },
-                    onDeleteNote = { note ->
-                        viewModel.deleteNote(note)
+            Tab(
+                selected = selectedTab == NotesTab.PERSONAL_NOTES,
+                onClick = { selectedTab = NotesTab.PERSONAL_NOTES },
+                text = { Text("My Notes") }
+            )
+            Tab(
+                selected = selectedTab == NotesTab.DISCUSSIONS,
+                onClick = { selectedTab = NotesTab.DISCUSSIONS },
+                text = { Text("Discussions") }
+            )
+        }
+
+        when (selectedTab) {
+            NotesTab.PERSONAL_NOTES -> {
+                // Existing notes content
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    items(datesWithNotes.toList().sortedDescending()) { date ->
+                        DateCard(
+                            date = date,
+                            isExpanded = date == expandedDate,
+                            notes = if (date == expandedDate) notes else emptyList(),
+                            onExpandClick = {
+                                if (expandedDate == date) {
+                                    expandedDate = null
+                                } else {
+                                    expandedDate = date
+                                    viewModel.setSelectedDate(date)
+                                }
+                            },
+                            onDeleteNote = { note ->
+                                viewModel.deleteNote(note)
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
+                }
+            }
+            NotesTab.DISCUSSIONS -> {
+                DiscussionsContent(
+                    viewModel = viewModel,
+                    onDiscussionClick = { /* Handle discussion click */ }
                 )
-                Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
@@ -425,4 +465,102 @@ private fun DeleteConfirmationDialog(
             }
         }
     )
+}
+
+@Composable
+private fun DiscussionsContent(
+    viewModel: NotesViewModel,
+    onDiscussionClick: (Discussion) -> Unit
+) {
+    val discussions by viewModel.discussions.collectAsStateWithLifecycle()
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+    ) {
+        items(discussions) { discussion ->
+            DiscussionCard(
+                discussion = discussion,
+                onClick = { onDiscussionClick(discussion) }
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun DiscussionCard(
+    discussion: Discussion,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        shape = MaterialTheme.shapes.medium,
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = discussion.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = discussion.content,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "By ${discussion.authorName}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.ThumbUp,
+                            contentDescription = "Likes",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "${discussion.likes}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Comment,
+                            contentDescription = "Comments",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "${discussion.commentCount}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+        }
+    }
 } 
