@@ -5,25 +5,32 @@ import android.app.Application
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -39,6 +46,7 @@ import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -61,6 +69,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -71,6 +81,8 @@ import com.example.fullcrossapplication.viewmodels.AuthViewModel
 import com.example.fullcrossapplication.viewmodels.ContactsViewModel
 import com.example.fullcrossapplication.viewmodels.NotificationsViewModel
 import com.example.fullcrossapplication.viewmodels.ThemeViewModel
+import coil.compose.AsyncImage
+import coil.transform.CircleCropTransformation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -138,12 +150,15 @@ fun AccountScreen(
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(
-                    imageVector = Icons.Default.AccountCircle,
-                    contentDescription = "Profile Picture",
-                    modifier = Modifier.size(80.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                val profileImageUri by authViewModel.profileImageUri.collectAsStateWithLifecycle()
+                
+                ProfileImage(
+                    imageUri = profileImageUri,
+                    onImageSelected = { uri ->
+                        authViewModel.updateProfileImage(uri)
+                    }
                 )
+                
                 Text(
                     text = "${currentUser?.firstName} ${currentUser?.lastName}",
                     fontSize = 24.sp,
@@ -529,4 +544,72 @@ fun FriendsList(
             }
         }
     )
+}
+
+@Composable
+private fun ProfileImage(
+    imageUri: Uri?,
+    onImageSelected: (Uri) -> Unit
+) {
+    val galleryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { onImageSelected(it) }
+    }
+
+    Box(
+        modifier = Modifier.padding(vertical = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // Profile Image
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .border(
+                    width = 2.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    shape = CircleShape
+                )
+                .clickable { galleryLauncher.launch("image/*") },
+            contentAlignment = Alignment.Center
+        ) {
+            if (imageUri != null) {
+                AsyncImage(
+                    model = imageUri,
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier.size(120.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+            
+        // Camera Icon Overlay (moved outside the profile image Box)
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .offset(x = (-8).dp, y = (-4).dp)  // Adjusted to be closer to bottom edge
+                .size(28.dp)  // Slightly smaller size
+                .background(
+                    MaterialTheme.colorScheme.primary,
+                    CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.CameraAlt,
+                contentDescription = "Change Profile Picture",
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(16.dp)  // Slightly smaller icon
+            )
+        }
+    }
 } 
