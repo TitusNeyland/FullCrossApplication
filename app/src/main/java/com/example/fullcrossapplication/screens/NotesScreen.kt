@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -62,6 +64,21 @@ import com.example.fullcrossapplication.data.Discussion
 import com.example.fullcrossapplication.viewmodels.NotesViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
+import com.example.fullcrossapplication.data.Comment
+import java.util.UUID
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,6 +90,7 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
     val datesWithNotes by viewModel.datesWithNotes.collectAsStateWithLifecycle()
     var expandedDate by remember { mutableStateOf<LocalDate?>(null) }
     var selectedTab by remember { mutableStateOf(NotesTab.PERSONAL_NOTES) }
+    var selectedDiscussionForComment by remember { mutableStateOf<Discussion?>(null) }
 
     LaunchedEffect(datesWithNotes) {
         if (datesWithNotes.contains(LocalDate.now()) && expandedDate != LocalDate.now()) {
@@ -182,6 +200,16 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
                 viewModel.addNote(title, content, verseRef, type)
                 expandedDate = LocalDate.now()
                 showAddNoteDialog = false
+            }
+        )
+    }
+
+    if (showAddDiscussionDialog) {
+        AddDiscussionDialog(
+            onDismiss = { showAddDiscussionDialog = false },
+            onDiscussionAdded = { title, content ->
+                viewModel.addDiscussion(title, content)
+                showAddDiscussionDialog = false
             }
         )
     }
@@ -473,6 +501,7 @@ private fun DiscussionsContent(
     onDiscussionClick: (Discussion) -> Unit
 ) {
     val discussions by viewModel.discussions.collectAsStateWithLifecycle()
+    var selectedDiscussion by remember { mutableStateOf<Discussion?>(null) }
 
     LazyColumn(
         modifier = Modifier
@@ -482,17 +511,31 @@ private fun DiscussionsContent(
         items(discussions) { discussion ->
             DiscussionCard(
                 discussion = discussion,
-                onClick = { onDiscussionClick(discussion) }
+                onClick = { selectedDiscussion = discussion },
+                onLikeClick = { viewModel.likeDiscussion(discussion.id) },
+                onCommentClick = { selectedDiscussion = discussion }
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+
+    selectedDiscussion?.let { discussion ->
+        FullDiscussionSheet(
+            discussion = discussion,
+            onDismiss = { selectedDiscussion = null },
+            onCommentAdded = { content ->
+                viewModel.addComment(discussion.id, content)
+            }
+        )
     }
 }
 
 @Composable
 private fun DiscussionCard(
     discussion: Discussion,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLikeClick: () -> Unit,
+    onCommentClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -531,9 +574,128 @@ private fun DiscussionCard(
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    IconButton(
+                        onClick = onLikeClick,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                Icons.Default.ThumbUp,
+                                contentDescription = "Like",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "${discussion.likes}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                    IconButton(
+                        onClick = onCommentClick,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Comment,
+                                contentDescription = "Comment",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "${discussion.commentCount}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FullDiscussionSheet(
+    discussion: Discussion,
+    onDismiss: () -> Unit,
+    onCommentAdded: (String) -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+    var newCommentText by remember { mutableStateOf("") }
+    var comments by remember { mutableStateOf(discussion.comments) }
+    val viewModel: NotesViewModel = viewModel()
+    val currentUserName by viewModel.currentUserName.collectAsStateWithLifecycle()
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = Modifier
+            .fillMaxHeight(0.95f)
+            .imePadding(),
+        windowInsets = WindowInsets.ime.union(WindowInsets.systemBars)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 16.dp)
+                .navigationBarsPadding()
+        ) {
+            // Discussion Header
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            ) {
+                Text(
+                    text = discussion.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "By ${discussion.authorName}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = formatTimestamp(discussion.timestamp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+
+                // Full discussion content
+                Text(
+                    text = discussion.content,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+
+                // Interaction stats
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Icon(
                             Icons.Default.ThumbUp,
@@ -542,12 +704,12 @@ private fun DiscussionCard(
                         )
                         Text(
                             text = "${discussion.likes}",
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Icon(
                             Icons.Default.Comment,
@@ -556,11 +718,179 @@ private fun DiscussionCard(
                         )
                         Text(
                             text = "${discussion.commentCount}",
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
             }
+
+            Divider()
+
+            // Comments section
+            Text(
+                text = "Comments",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(vertical = 12.dp)
+            )
+
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                items(comments) { comment ->
+                    CommentItem(comment = comment)
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                }
+            }
+
+            // Comment input
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = newCommentText,
+                    onValueChange = { newCommentText = it },
+                    label = { Text("Add a comment") },
+                    modifier = Modifier.weight(1f),
+                    maxLines = 3,
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                if (newCommentText.isNotBlank()) {
+                                    onCommentAdded(newCommentText)
+                                    val newComment = Comment(
+                                        id = UUID.randomUUID().toString(),
+                                        discussionId = discussion.id,
+                                        content = newCommentText,
+                                        authorName = currentUserName ?: "Anonymous",
+                                        timestamp = System.currentTimeMillis()
+                                    )
+                                    comments = comments + newComment
+                                    newCommentText = ""
+                                }
+                            },
+                            enabled = newCommentText.isNotBlank()
+                        ) {
+                            Icon(
+                                Icons.Default.Send,
+                                contentDescription = "Send comment",
+                                tint = if (newCommentText.isNotBlank()) 
+                                    MaterialTheme.colorScheme.primary 
+                                else 
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            )
+                        }
+                    }
+                )
+            }
         }
     }
+}
+
+@Composable
+private fun CommentItem(comment: Comment) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = comment.authorName,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = formatTimestamp(comment.timestamp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+        Text(
+            text = comment.content,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
+private fun formatTimestamp(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val diff = now - timestamp
+
+    return when {
+        diff < 60000 -> "Just now"
+        diff < 3600000 -> "${diff / 60000} minutes ago"
+        diff < 86400000 -> "${diff / 3600000} hours ago"
+        else -> SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+            .format(Date(timestamp))
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddDiscussionDialog(
+    onDismiss: () -> Unit,
+    onDiscussionAdded: (String, String) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var content by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Start a Discussion") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    singleLine = true
+                )
+                
+                OutlinedTextField(
+                    value = content,
+                    onValueChange = { content = it },
+                    label = { Text("Share your thoughts...") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(120.dp),
+                    maxLines = 5
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (title.isNotBlank() && content.isNotBlank()) {
+                        onDiscussionAdded(title, content)
+                        onDismiss()
+                    }
+                },
+                enabled = title.isNotBlank() && content.isNotBlank()
+            ) {
+                Text("Post")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 } 

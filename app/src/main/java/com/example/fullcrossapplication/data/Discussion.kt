@@ -9,7 +9,8 @@ data class Discussion(
     val timestamp: Long = System.currentTimeMillis(),
     val likes: Int = 0,
     val commentCount: Int = 0,
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+    val comments: List<Comment> = emptyList()
 )
 
 data class Comment(
