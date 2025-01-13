@@ -318,7 +318,7 @@ private fun FeaturedStreamCard(stream: LiveStream) {
                     .fillMaxWidth()
                     .height(200.dp),
                 contentScale = ContentScale.Crop,
-                error = painterResource(id = R.drawable.ic_christian_cross) // Fallback image
+//                error = painterResource(id = R.drawable.ic_christian_cross) // Fallback image
             )
 
             // Live indicator
