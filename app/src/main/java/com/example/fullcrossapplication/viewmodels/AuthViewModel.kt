@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import android.net.Uri
 
 class AuthViewModel(
     private val repository: FirebaseRepository = FirebaseRepository()
@@ -26,6 +27,9 @@ class AuthViewModel(
 
     private val _friendsCount = MutableStateFlow(0)
     val friendsCount: StateFlow<Int> = _friendsCount
+
+    private val _profileImageUri = MutableStateFlow<Uri?>(null)
+    val profileImageUri = _profileImageUri.asStateFlow()
 
     init {
         checkCurrentUser()
@@ -144,6 +148,17 @@ class AuthViewModel(
             } catch (e: Exception) {
                 // Handle error
                 _friendsCount.value = 0
+            }
+        }
+    }
+
+    fun updateProfileImage(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                // TODO: Upload image to your backend/storage
+                _profileImageUri.value = uri
+            } catch (e: Exception) {
+                _error.value = "Failed to update profile image: ${e.message}"
             }
         }
     }
