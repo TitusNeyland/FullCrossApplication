@@ -185,7 +185,7 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                                 Icon(
                                     imageVector = Icons.Default.Search,
                                     contentDescription = "Search",
-                                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                 )
                             },
                             shape = MaterialTheme.shapes.large,

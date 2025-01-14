@@ -402,8 +402,8 @@ private fun PaymentMethodCard(
             } else {
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
-                    contentDescription = "Open ${paymentMethod.name}",
-                    tint = MaterialTheme.colorScheme.primary
+                    contentDescription = "Select payment method",
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
         }

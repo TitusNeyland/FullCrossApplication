@@ -87,6 +87,7 @@ import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -346,8 +347,8 @@ private fun NoteItem(
                 if (note.verseReference != null) {
                     Text(
                         text = note.verseReference,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color(0xFF4CAF50),
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }

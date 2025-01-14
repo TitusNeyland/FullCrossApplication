@@ -47,6 +47,9 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -193,7 +196,7 @@ fun AccountScreen(
                     Icon(
                         imageVector = Icons.Default.People,
                         contentDescription = "Friends",
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.size(24.dp)
                     )
                     Column(
@@ -214,7 +217,7 @@ fun AccountScreen(
                 Icon(
                     Icons.Default.ChevronRight,
                     contentDescription = "View Friends",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
         }
@@ -320,7 +323,15 @@ fun AccountScreen(
             trailingContent = {
                 Switch(
                     checked = isDarkMode,
-                    onCheckedChange = { themeViewModel.toggleDarkMode() }
+                    onCheckedChange = { themeViewModel.toggleDarkMode() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color(0xFF4CAF50),  // Material Green 500
+                        checkedTrackColor = Color(0xFF4CAF50).copy(alpha = 0.5f),
+                        checkedBorderColor = Color(0xFF4CAF50),
+                        uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        uncheckedBorderColor = MaterialTheme.colorScheme.outline
+                    )
                 )
             }
         )
@@ -388,7 +399,11 @@ fun AccountScreen(
             onClick = { showFriendsList = true },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.onBackground,
+                contentColor = MaterialTheme.colorScheme.background
+            )
         ) {
             Icon(
                 Icons.Default.People,
@@ -521,7 +536,7 @@ fun FriendsList(
                                 Icon(
                                     Icons.Default.Person,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
+                                    tint = MaterialTheme.colorScheme.onBackground
                                 )
                             },
                             trailingContent = {
@@ -538,7 +553,7 @@ fun FriendsList(
                                     Icon(
                                         Icons.Default.Clear,
                                         contentDescription = "Remove friend",
-                                        tint = MaterialTheme.colorScheme.error
+                                        tint = MaterialTheme.colorScheme.onBackground
                                     )
                                 }
                             }

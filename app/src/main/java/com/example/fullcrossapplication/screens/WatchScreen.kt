@@ -366,34 +366,19 @@ private fun FeaturedStreamCard(stream: LiveStream) {
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Visibility,
+                    Icons.Default.Visibility,
                     contentDescription = "Viewers",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
-                Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "${stream.viewerCount} watching",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                
-                Spacer(modifier = Modifier.width(16.dp))
-                
-                Icon(
-                    imageVector = Icons.Default.Schedule,
-                    contentDescription = "Duration",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "${stream.durationMinutes} min",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
 
@@ -724,7 +709,7 @@ private fun SocialConnectionDialog(
                         Icon(
                             Icons.Default.Search,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                     },
                     trailingContent = {
@@ -759,7 +744,7 @@ private fun SocialConnectionDialog(
                             Icon(
                                 Icons.Default.Search,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = MaterialTheme.colorScheme.onBackground
                             )
                         },
                         trailingIcon = {
@@ -772,7 +757,8 @@ private fun SocialConnectionDialog(
                                 ) {
                                     Icon(
                                         Icons.Default.Clear,
-                                        contentDescription = "Clear search"
+                                        contentDescription = "Clear search",
+                                        tint = MaterialTheme.colorScheme.onBackground
                                     )
                                 }
                             }
@@ -809,7 +795,8 @@ private fun SocialConnectionDialog(
                                         leadingContent = {
                                             Icon(
                                                 Icons.Default.Person,
-                                                contentDescription = null
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onBackground
                                             )
                                         },
                                         trailingContent = {
@@ -891,7 +878,7 @@ private fun SocialConnectionDialog(
                             Icon(
                                 Icons.Default.ContactPhone,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = MaterialTheme.colorScheme.onBackground
                             )
                         }
                     },
@@ -962,7 +949,7 @@ private fun SocialConnectionDialog(
                                         Icons.Default.PersonAdd,
                                         contentDescription = null,
                                         tint = if (contact.isAppUser) 
-                                            MaterialTheme.colorScheme.primary
+                                            MaterialTheme.colorScheme.onBackground
                                         else 
                                             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                     )
@@ -1008,7 +995,10 @@ private fun SocialConnectionDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(
+                    "Close",
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             }
         }
     )
