@@ -49,10 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -64,7 +61,6 @@ import com.example.fullcrossapplication.data.Discussion
 import com.example.fullcrossapplication.viewmodels.NotesViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.material3.ModalBottomSheet
@@ -79,7 +75,18 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -635,14 +642,15 @@ private fun FullDiscussionSheet(
     onDismiss: () -> Unit,
     onCommentAdded: (String) -> Unit
 ) {
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var newCommentText by remember { mutableStateOf("") }
-    var localDiscussion by remember { mutableStateOf(discussion) }
     val viewModel: NotesViewModel = viewModel()
     val currentUserName by viewModel.currentUserName.collectAsStateWithLifecycle()
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    
+    // Get the latest version of the discussion from the discussions list
+    val discussions by viewModel.discussions.collectAsStateWithLifecycle()
+    val updatedDiscussion = discussions.find { it.id == discussion.id } ?: discussion
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -666,7 +674,7 @@ private fun FullDiscussionSheet(
                     .padding(bottom = 16.dp)
             ) {
                 Text(
-                    text = localDiscussion.title,
+                    text = updatedDiscussion.title,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -679,23 +687,24 @@ private fun FullDiscussionSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "By ${localDiscussion.authorName}",
+                        text = "By ${updatedDiscussion.authorName}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
                     Text(
-                        text = formatTimestamp(localDiscussion.timestamp),
+                        text = formatTimestamp(updatedDiscussion.timestamp),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
 
                 Text(
-                    text = localDiscussion.content,
+                    text = updatedDiscussion.content,
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
 
+                // Like button and comment count
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -706,32 +715,20 @@ private fun FullDiscussionSheet(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.clickable {
-                            viewModel.likeDiscussion(localDiscussion.id)
-                            val isCurrentlyLiked = currentUserId in localDiscussion.likedByUsers
-                            localDiscussion = if (isCurrentlyLiked) {
-                                localDiscussion.copy(
-                                    likes = localDiscussion.likes - 1,
-                                    likedByUsers = localDiscussion.likedByUsers - currentUserId
-                                )
-                            } else {
-                                localDiscussion.copy(
-                                    likes = localDiscussion.likes + 1,
-                                    likedByUsers = localDiscussion.likedByUsers + currentUserId
-                                )
-                            }
+                            viewModel.likeDiscussion(updatedDiscussion.id)
                         }
                     ) {
                         Icon(
                             Icons.Default.ThumbUp,
                             contentDescription = "Like",
                             modifier = Modifier.size(16.dp),
-                            tint = if (currentUserId in localDiscussion.likedByUsers)
+                            tint = if (currentUserId in updatedDiscussion.likedByUsers)
                                 MaterialTheme.colorScheme.primary
                             else
                                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
                         Text(
-                            text = "${localDiscussion.likes}",
+                            text = "${updatedDiscussion.likes}",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -745,7 +742,7 @@ private fun FullDiscussionSheet(
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = "${localDiscussion.comments.size}",
+                            text = "${updatedDiscussion.comments.size}",
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -755,22 +752,24 @@ private fun FullDiscussionSheet(
             Divider()
 
             Text(
-                text = "Comments (${localDiscussion.comments.size})",
+                text = "Comments (${updatedDiscussion.comments.size})",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(vertical = 12.dp)
             )
 
+            // Comments list
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
             ) {
-                items(localDiscussion.comments) { comment ->
+                items(updatedDiscussion.comments) { comment ->
                     CommentItem(comment = comment)
                     Divider(modifier = Modifier.padding(vertical = 8.dp))
                 }
             }
 
+            // Comment input
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -789,18 +788,6 @@ private fun FullDiscussionSheet(
                             onClick = {
                                 if (newCommentText.isNotBlank()) {
                                     onCommentAdded(newCommentText)
-                                    val newComment = Comment(
-                                        id = UUID.randomUUID().toString(),
-                                        discussionId = localDiscussion.id,
-                                        content = newCommentText,
-                                        authorId = "",
-                                        authorName = currentUserName ?: "Anonymous",
-                                        timestamp = System.currentTimeMillis()
-                                    )
-                                    localDiscussion = localDiscussion.copy(
-                                        comments = localDiscussion.comments + newComment,
-                                        commentCount = localDiscussion.commentCount + 1
-                                    )
                                     newCommentText = ""
                                 }
                             },
