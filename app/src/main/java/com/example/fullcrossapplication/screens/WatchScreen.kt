@@ -414,7 +414,8 @@ private fun FeaturedStreamCard(stream: LiveStream) {
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = MaterialTheme.colorScheme.onBackground,
+                    contentColor = MaterialTheme.colorScheme.background
                 )
             ) {
                 Icon(
@@ -519,7 +520,7 @@ private fun UpcomingStreamCard(
                 Icon(
                     imageVector = Icons.Default.Notifications,
                     contentDescription = "Set reminder",
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
         }

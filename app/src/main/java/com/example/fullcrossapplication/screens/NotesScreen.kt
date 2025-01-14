@@ -146,7 +146,7 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
                             "Add Note" 
                         else 
                             "Start Discussion",
-                        tint = MaterialTheme.colorScheme.onSurface
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
             },
@@ -163,12 +163,28 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
             Tab(
                 selected = selectedTab == NotesTab.PERSONAL_NOTES,
                 onClick = { selectedTab = NotesTab.PERSONAL_NOTES },
-                text = { Text("My Notes") }
+                text = { 
+                    Text(
+                        "My Notes",
+                        color = if (selectedTab == NotesTab.PERSONAL_NOTES)
+                            MaterialTheme.colorScheme.onBackground
+                        else
+                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    ) 
+                }
             )
             Tab(
                 selected = selectedTab == NotesTab.DISCUSSIONS,
                 onClick = { selectedTab = NotesTab.DISCUSSIONS },
-                text = { Text("Discussions") }
+                text = { 
+                    Text(
+                        "Discussions",
+                        color = if (selectedTab == NotesTab.DISCUSSIONS)
+                            MaterialTheme.colorScheme.onBackground
+                        else
+                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    ) 
+                }
             )
         }
 
@@ -283,7 +299,7 @@ private fun DateCard(
                     Icon(
                         imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = if (isExpanded) "Collapse" else "Expand",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
@@ -436,13 +452,13 @@ private fun AddNoteDialog(
                             modifier = Modifier.padding(horizontal = 4.dp),
                             shape = MaterialTheme.shapes.small,
                             color = if (noteType == type) 
-                                MaterialTheme.colorScheme.primaryContainer 
+                                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
                             else 
                                 MaterialTheme.colorScheme.surface,
                             border = BorderStroke(
                                 1.dp,
                                 if (noteType == type)
-                                    MaterialTheme.colorScheme.primary
+                                    MaterialTheme.colorScheme.onBackground
                                 else
                                     MaterialTheme.colorScheme.outline
                             )
@@ -452,7 +468,7 @@ private fun AddNoteDialog(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = if (noteType == type)
-                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                    MaterialTheme.colorScheme.onBackground
                                 else
                                     MaterialTheme.colorScheme.onSurface
                             )
@@ -723,7 +739,7 @@ private fun FullDiscussionSheet(
                             contentDescription = "Like",
                             modifier = Modifier.size(16.dp),
                             tint = if (currentUserId in updatedDiscussion.likedByUsers)
-                                MaterialTheme.colorScheme.primary
+                                MaterialTheme.colorScheme.onBackground
                             else
                                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
@@ -803,7 +819,7 @@ private fun FullDiscussionSheet(
                                 Icons.Default.Send,
                                 contentDescription = "Send comment",
                                 tint = if (newCommentText.isNotBlank()) 
-                                    MaterialTheme.colorScheme.primary 
+                                    MaterialTheme.colorScheme.onBackground 
                                 else 
                                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                             )

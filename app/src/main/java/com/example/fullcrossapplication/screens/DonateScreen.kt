@@ -135,7 +135,7 @@ fun DonateScreen() {
                     modifier = Modifier
                         .size(48.dp)
                         .padding(bottom = 16.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
                 
                 Text(

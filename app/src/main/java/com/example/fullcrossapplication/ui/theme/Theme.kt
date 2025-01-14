@@ -21,22 +21,22 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.fullcrossapplication.viewmodels.ThemeViewModel
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF6B9EFF),
-    secondary = Color(0xFF8B9EFF),
-    tertiary = Color(0xFFAB9EFF),
+    primary = Color.White,
+    secondary = Color.White,
+    tertiary = Color.White,
     background = Color(0xFF1A1C1E),
     surface = Color(0xFF1A1C1E),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
+    onPrimary = Color.Black,
+    onSecondary = Color.Black,
+    onTertiary = Color.Black,
     onBackground = Color(0xFFFFFBFE),
     onSurface = Color(0xFFFFFBFE),
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF2D5DA8),
-    secondary = Color(0xFF4D5DA8),
-    tertiary = Color(0xFF6D5DA8),
+    primary = Color.Black,
+    secondary = Color.Black,
+    tertiary = Color.Black,
     background = Color(0xFFFFFBFE),
     surface = Color(0xFFFFFBFE),
     onPrimary = Color.White,

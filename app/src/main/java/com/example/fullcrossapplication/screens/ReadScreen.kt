@@ -25,6 +25,7 @@ import com.example.fullcrossapplication.utils.BibleTextFormatter
 import android.content.Intent
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -227,7 +228,7 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                                         Icon(
                                             imageVector = Icons.Default.AutoAwesome,
                                             contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary
+                                            tint = MaterialTheme.colorScheme.onBackground
                                         )
                                         Text(
                                             text = "Verse of the Day",
@@ -272,7 +273,7 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                                                 Icons.Default.Share,
                                                 contentDescription = "Share Verse of the Day",
                                                 modifier = Modifier.size(16.dp),
-                                                tint = MaterialTheme.colorScheme.primary
+                                                tint = MaterialTheme.colorScheme.onBackground
                                             )
                                         }
                                         // Refresh button
@@ -289,7 +290,7 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                                                 imageVector = Icons.Default.Refresh,
                                                 contentDescription = "Refresh verse",
                                                 modifier = Modifier.size(16.dp),
-                                                tint = MaterialTheme.colorScheme.primary
+                                                tint = MaterialTheme.colorScheme.onBackground
                                             )
                                         }
                                     }
@@ -300,7 +301,7 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                                         modifier = Modifier
                                             .padding(24.dp)
                                             .size(24.dp),
-                                        color = MaterialTheme.colorScheme.primary
+                                        color = MaterialTheme.colorScheme.onBackground
                                     )
                                 } else if (verseError != null) {
                                     Text(
@@ -322,7 +323,7 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                                         Text(
                                             text = verse.reference,
                                             style = MaterialTheme.typography.labelLarge,
-                                            color = MaterialTheme.colorScheme.primary,
+                                            color = MaterialTheme.colorScheme.onBackground,
                                             fontWeight = FontWeight.Medium,
                                             modifier = Modifier
                                                 .background(
