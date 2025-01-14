@@ -100,7 +100,7 @@ fun SplashScreen(onSplashScreenFinish: () -> Unit) {
             )
             
             Text(
-                text = "Welcome to your spiritual journey",
+                text = "Serving God by Serving Others",
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
@@ -108,4 +108,4 @@ fun SplashScreen(onSplashScreenFinish: () -> Unit) {
             )
         }
     }
-} 
+}

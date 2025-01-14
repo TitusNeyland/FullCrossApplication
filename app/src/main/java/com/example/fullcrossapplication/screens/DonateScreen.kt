@@ -189,22 +189,25 @@ fun DonateScreen() {
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "\"Honor the LORD with your wealth and with the firstfruits of all your produce; then your barns will be filled with plenty, and your vats will be bursting with wine.\"",
+                    text = "\"For God loves a cheerful giver.\"",
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontStyle = FontStyle.Italic
                     ),
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
                 Text(
-                    text = "Proverbs 3:9-10",
+                    text = "2 Corinthians 9:7",
                     style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(top = 8.dp),
-                    color = MaterialTheme.colorScheme.primary
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
