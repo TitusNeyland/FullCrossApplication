@@ -39,6 +39,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -159,7 +161,14 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
         // Tab Row
         TabRow(
             selectedTabIndex = selectedTab.ordinal,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            indicator = { tabPositions ->
+                TabRowDefaults.Indicator(
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab.ordinal]),
+                    // Use a subtle green color
+                    color = Color(0xFF4CAF50).copy(alpha = 0.6f)  // Material Green 500 with 60% opacity
+                )
+            }
         ) {
             Tab(
                 selected = selectedTab == NotesTab.PERSONAL_NOTES,
