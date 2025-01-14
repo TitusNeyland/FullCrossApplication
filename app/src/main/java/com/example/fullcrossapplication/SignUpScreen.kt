@@ -118,31 +118,41 @@ fun SignUpScreen(
         // Sign Up Button
         Button(
             onClick = {
-                if (validateInputs(firstName, lastName, email, password, confirmPassword)) {
-                    authViewModel.signUp(email, password, firstName, lastName)
+                if (firstName.isNotBlank() && lastName.isNotBlank() && 
+                    email.isNotBlank() && password.isNotBlank()) {
+                    authViewModel.signUp(firstName, lastName, email, password)
                 }
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            enabled = !isLoading
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.onBackground,
+                contentColor = MaterialTheme.colorScheme.background
+            )
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            } else {
-                Text("Sign Up")
-            }
+            Text("Sign up")
         }
 
         // Back to Login
-        TextButton(
-            onClick = onBackToLogin,
-            modifier = Modifier.padding(bottom = 16.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Already have an account? Log in")
+            Text(
+                "Already have an account? ",
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+            TextButton(
+                onClick = onBackToLogin,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onBackground
+                ),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                Text("Log in")
+            }
         }
     }
 }

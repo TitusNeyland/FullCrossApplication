@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -112,8 +113,19 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Sign up link
-        TextButton(onClick = onSignUpClick) {
-            Text("Don't have an account? Sign up")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text("Don't have an account? ")
+            TextButton(
+                onClick = onSignUpClick,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onBackground
+                )
+            ) {
+                Text("Sign up")
+            }
         }
 
         // Forgot password link

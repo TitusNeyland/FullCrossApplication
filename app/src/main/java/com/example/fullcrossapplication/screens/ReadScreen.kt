@@ -545,13 +545,21 @@ fun AddVerseNoteDialog(
                     if (title.isNotBlank() && content.isNotBlank()) {
                         onNoteAdded(title, content)
                     }
-                }
+                },
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onBackground
+                )
             ) {
                 Text("Save")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onBackground
+                )
+            ) {
                 Text("Cancel")
             }
         }
