@@ -279,4 +279,27 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    fun deleteComment(discussionId: String, commentId: String) {
+        viewModelScope.launch {
+            try {
+                // Delete the comment
+                firestore.collection("discussions")
+                    .document(discussionId)
+                    .collection("comments")
+                    .document(commentId)
+                    .delete()
+                    .await()
+
+                // Decrement the comment count
+                firestore.collection("discussions")
+                    .document(discussionId)
+                    .update("commentCount", FieldValue.increment(-1))
+                    .await()
+
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
 } 

@@ -764,7 +764,13 @@ private fun FullDiscussionSheet(
                     .fillMaxWidth()
             ) {
                 items(updatedDiscussion.comments) { comment ->
-                    CommentItem(comment = comment)
+                    CommentItem(
+                        comment = comment,
+                        currentUserId = currentUserId,
+                        onDeleteComment = { commentId ->
+                            viewModel.deleteComment(updatedDiscussion.id, commentId)
+                        }
+                    )
                     Divider(modifier = Modifier.padding(vertical = 8.dp))
                 }
             }
@@ -810,7 +816,13 @@ private fun FullDiscussionSheet(
 }
 
 @Composable
-private fun CommentItem(comment: Comment) {
+private fun CommentItem(
+    comment: Comment,
+    currentUserId: String = FirebaseAuth.getInstance().currentUser?.uid ?: "",
+    onDeleteComment: (String) -> Unit = {}
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -818,23 +830,71 @@ private fun CommentItem(comment: Comment) {
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = comment.authorName,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = formatTimestamp(comment.timestamp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = comment.authorName,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = formatTimestamp(comment.timestamp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
+            
+            // Show delete button only for the comment author
+            if (comment.authorId == currentUserId) {
+                IconButton(
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete comment",
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
         Text(
             text = comment.content,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Comment") },
+            text = { Text("Are you sure you want to delete this comment?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteComment(comment.id)
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text(
+                        "Delete",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
         )
     }
 }
