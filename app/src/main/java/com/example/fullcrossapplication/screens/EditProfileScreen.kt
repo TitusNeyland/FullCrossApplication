@@ -127,19 +127,15 @@ fun EditProfileScreen(
                         authViewModel.setError("Please fill in all required fields")
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading && 
-                         firstName.isNotBlank() && 
-                         lastName.isNotBlank()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.onBackground,
+                    contentColor = MaterialTheme.colorScheme.background
+                )
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text("Save Changes")
-                }
+                Text("Save Changes")
             }
         }
 
