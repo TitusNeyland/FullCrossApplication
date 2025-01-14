@@ -10,7 +10,8 @@ data class Discussion(
     val likes: Int = 0,
     val commentCount: Int = 0,
     val tags: List<String> = emptyList(),
-    val comments: List<Comment> = emptyList()
+    val comments: List<Comment> = emptyList(),
+    val likedByUsers: Set<String> = emptySet()
 )
 
 data class Comment(

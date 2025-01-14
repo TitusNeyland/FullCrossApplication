@@ -168,10 +168,23 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
 
     fun likeDiscussion(discussionId: String) {
         viewModelScope.launch {
+            val currentUserId = auth.currentUser?.uid ?: return@launch
             val currentDiscussions = _discussions.value
             val updatedDiscussions = currentDiscussions.map { discussion ->
                 if (discussion.id == discussionId) {
-                    discussion.copy(likes = discussion.likes + 1)
+                    if (currentUserId in discussion.likedByUsers) {
+                        // Unlike if already liked
+                        discussion.copy(
+                            likes = discussion.likes - 1,
+                            likedByUsers = discussion.likedByUsers - currentUserId.toString()
+                        )
+                    } else {
+                        // Like if not already liked
+                        discussion.copy(
+                            likes = discussion.likes + 1,
+                            likedByUsers = discussion.likedByUsers + currentUserId.toString()
+                        )
+                    }
                 } else {
                     discussion
                 }
