@@ -57,11 +57,18 @@ fun LoginScreen(
                 isError = false
                 errorMessage = null
             },
-            label = { Text("Email") },
+            label = { Text("Email", color = MaterialTheme.colorScheme.onBackground) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             isError = isError,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -74,12 +81,19 @@ fun LoginScreen(
                 isError = false
                 errorMessage = null
             },
-            label = { Text("Password") },
+            label = { Text("Password", color = MaterialTheme.colorScheme.onBackground) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation(),
             isError = isError,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            )
         )
 
         // Error message

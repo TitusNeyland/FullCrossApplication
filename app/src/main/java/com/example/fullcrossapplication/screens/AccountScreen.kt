@@ -470,7 +470,9 @@ fun AccountScreen(
                         notificationsEnabled = notificationManager.areNotificationsEnabled()
                     }
                 ) {
-                    Text("Open Settings")
+                    Text("Open Settings",
+                              color = MaterialTheme.colorScheme.onBackground
+                    )
                 }
             },
             dismissButton = {
@@ -480,7 +482,9 @@ fun AccountScreen(
                         notificationsEnabled = notificationManager.areNotificationsEnabled()
                     }
                 ) {
-                    Text("Cancel")
+                    Text("Cancel",
+                              color = MaterialTheme.colorScheme.onBackground
+                    )
                 }
             }
         )

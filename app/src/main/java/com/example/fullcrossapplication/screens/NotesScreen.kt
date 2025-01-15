@@ -430,25 +430,46 @@ private fun AddNoteDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title") },
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text("Title", color = MaterialTheme.colorScheme.onBackground) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
                 )
                 OutlinedTextField(
                     value = content,
                     onValueChange = { content = it },
-                    label = { Text("Content") },
+                    label = { Text("Content", color = MaterialTheme.colorScheme.onBackground) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp),
-                    minLines = 3
+                    minLines = 3,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
                 )
                 OutlinedTextField(
                     value = verseReference,
                     onValueChange = { verseReference = it },
-                    label = { Text("Verse Reference (Optional)") },
+                    label = { Text("Verse Reference (Optional)", color = MaterialTheme.colorScheme.onBackground) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp)
+                        .padding(top = 8.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
                 )
                 Row(
                     modifier = Modifier
@@ -462,15 +483,15 @@ private fun AddNoteDialog(
                             modifier = Modifier.padding(horizontal = 4.dp),
                             shape = MaterialTheme.shapes.small,
                             color = if (noteType == type) 
-                                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
+                                Color(0xFF4CAF50).copy(alpha = 0.5f)  // More visible green background when selected
                             else 
-                                MaterialTheme.colorScheme.surface,
+                                Color(0xFF4CAF50).copy(alpha = 0.1f),  // Light green background when not selected
                             border = BorderStroke(
                                 1.dp,
                                 if (noteType == type)
-                                    MaterialTheme.colorScheme.onBackground
+                                    Color(0xFF2E7D32)  // Darker green border when selected
                                 else
-                                    MaterialTheme.colorScheme.outline
+                                    Color(0xFF2E7D32).copy(alpha = 0.7f)  // Slightly transparent dark green when not selected
                             )
                         ) {
                             Text(
@@ -478,9 +499,9 @@ private fun AddNoteDialog(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = if (noteType == type)
-                                    MaterialTheme.colorScheme.onBackground
+                                    Color(0xFF1B5E20)  // Even darker green text when selected (Green 900)
                                 else
-                                    MaterialTheme.colorScheme.onSurface
+                                    Color(0xFF2E7D32)  // Dark green text when not selected (Green 800)
                             )
                         }
                     }

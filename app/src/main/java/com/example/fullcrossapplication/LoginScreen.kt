@@ -143,13 +143,16 @@ fun LoginScreen(
                     email = it
                     authViewModel.clearError()
                 },
-                label = { Text("Email") },
+                label = { Text("Email", color = MaterialTheme.colorScheme.onBackground) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.onBackground,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                    cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                 ),
                 shape = RoundedCornerShape(12.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
@@ -161,15 +164,17 @@ fun LoginScreen(
                     password = it
                     authViewModel.clearError()
                 },
-                label = { Text("Password") },
+                label = { Text("Password", color = MaterialTheme.colorScheme.onBackground) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 24.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.onBackground,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                    cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                 ),
-                shape = RoundedCornerShape(12.dp),
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )
