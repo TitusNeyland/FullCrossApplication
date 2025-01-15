@@ -998,21 +998,35 @@ private fun AddDiscussionDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title") },
+                    label = { Text("Title", color = MaterialTheme.colorScheme.onBackground) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 8.dp),
-                    singleLine = true
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
                 )
                 
                 OutlinedTextField(
                     value = content,
                     onValueChange = { content = it },
-                    label = { Text("Share your thoughts...") },
+                    label = { Text("Share your thoughts...", color = MaterialTheme.colorScheme.onBackground) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(120.dp),
-                    maxLines = 5
+                    maxLines = 5,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
                 )
             }
         },
@@ -1024,7 +1038,10 @@ private fun AddDiscussionDialog(
                         onDismiss()
                     }
                 },
-                enabled = title.isNotBlank() && content.isNotBlank()
+                enabled = title.isNotBlank() && content.isNotBlank(),
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onBackground
+                )
             ) {
                 Text("Post")
             }
