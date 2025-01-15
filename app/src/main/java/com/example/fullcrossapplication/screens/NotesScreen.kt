@@ -822,9 +822,16 @@ private fun FullDiscussionSheet(
                 OutlinedTextField(
                     value = newCommentText,
                     onValueChange = { newCommentText = it },
-                    label = { Text("Add a comment") },
+                    label = { Text("Add a comment", color = MaterialTheme.colorScheme.onBackground) },
                     modifier = Modifier.weight(1f),
                     maxLines = 3,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    ),
                     trailingIcon = {
                         IconButton(
                             onClick = {

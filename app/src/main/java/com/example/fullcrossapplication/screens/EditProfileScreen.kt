@@ -139,10 +139,11 @@ fun EditProfileScreen(
 
             Button(
                 onClick = {
-                    if (firstName.isNotBlank() && lastName.isNotBlank() && email.isNotBlank()) {
+                    if (firstName.isNotBlank() && lastName.isNotBlank() && phoneNumber.isNotBlank() && email.isNotBlank()) {
                         authViewModel.updateProfile(
                             firstName,
                             lastName,
+                            phoneNumber,
                             email
                         ) { success ->
                             if (success) {

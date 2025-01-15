@@ -110,6 +110,7 @@ class AuthViewModel(
         firstName: String,
         lastName: String,
         phoneNumber: String,
+        email: String,
         onComplete: (Boolean) -> Unit
     ) {
         viewModelScope.launch {
