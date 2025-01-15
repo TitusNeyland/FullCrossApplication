@@ -406,7 +406,8 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .align(Alignment.Center)
-                        .size(50.dp)
+                        .size(50.dp),
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
 

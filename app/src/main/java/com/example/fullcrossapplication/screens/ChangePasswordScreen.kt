@@ -60,11 +60,18 @@ fun ChangePasswordScreen(
                     currentPassword = it
                     authViewModel.clearError()
                 },
-                label = { Text("Current Password") },
+                label = { Text("Current Password", color = MaterialTheme.colorScheme.onBackground) },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                    .padding(bottom = 16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                    cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
             )
 
             // New password
@@ -74,11 +81,18 @@ fun ChangePasswordScreen(
                     newPassword = it
                     authViewModel.clearError()
                 },
-                label = { Text("New Password") },
+                label = { Text("New Password", color = MaterialTheme.colorScheme.onBackground) },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                    .padding(bottom = 16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                    cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
             )
 
             // Confirm new password
@@ -88,11 +102,18 @@ fun ChangePasswordScreen(
                     confirmNewPassword = it
                     authViewModel.clearError()
                 },
-                label = { Text("Confirm New Password") },
+                label = { Text("Confirm New Password", color = MaterialTheme.colorScheme.onBackground) },
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp)
+                    .padding(bottom = 24.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                    cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
             )
 
             Button(
@@ -109,15 +130,21 @@ fun ChangePasswordScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading && currentPassword.isNotBlank() && 
-                         newPassword.isNotBlank() && confirmNewPassword.isNotBlank()
+                         newPassword.isNotBlank() && confirmNewPassword.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.onBackground,
+                    contentColor = MaterialTheme.colorScheme.background
+                )
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = MaterialTheme.colorScheme.background
                     )
                 } else {
-                    Text("Change Password")
+                    Text("Change Password",
+                        color = MaterialTheme.colorScheme.background
+                    )
                 }
             }
         }
@@ -137,7 +164,9 @@ fun ChangePasswordScreen(
                             onNavigateBack()
                         }
                     ) {
-                        Text("OK")
+                        Text("OK",
+                                  color = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 }
             )

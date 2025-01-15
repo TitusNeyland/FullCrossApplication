@@ -815,7 +815,9 @@ private fun SocialConnectionDialog(
                                                             ).show()
                                                         }
                                                     ) {
-                                                        Text("Add Friend")
+                                                        Text("Add Friend",
+                                                                  color = Color(0xFF4CAF52)
+                                                        )
                                                     }
                                                 }
                                                 FriendshipStatus.PENDING -> {
@@ -934,7 +936,7 @@ private fun SocialConnectionDialog(
                                                     .padding(start = 8.dp)
                                                     .size(8.dp)
                                                     .background(
-                                                        color = MaterialTheme.colorScheme.primary,
+                                                        color = Color(0xFF4CAF50),
                                                         shape = CircleShape
                                                     )
                                             )

@@ -64,10 +64,17 @@ fun EditProfileScreen(
                     firstName = it
                     authViewModel.clearError()
                 },
-                label = { Text("First Name") },
+                label = { Text("First Name", color = MaterialTheme.colorScheme.onBackground) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                    .padding(bottom = 16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                    cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
             )
 
             OutlinedTextField(
@@ -76,10 +83,17 @@ fun EditProfileScreen(
                     lastName = it
                     authViewModel.clearError()
                 },
-                label = { Text("Last Name") },
+                label = { Text("Last Name", color = MaterialTheme.colorScheme.onBackground) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                    .padding(bottom = 16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                    cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
             )
 
             OutlinedTextField(
@@ -88,13 +102,20 @@ fun EditProfileScreen(
                     phoneNumber = it
                     authViewModel.clearError()
                 },
-                label = { Text("Phone Number") },
+                label = { Text("Phone Number", color = MaterialTheme.colorScheme.onBackground) },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Phone
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                    .padding(bottom = 16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                    cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
             )
 
             OutlinedTextField(
@@ -103,26 +124,31 @@ fun EditProfileScreen(
                     email = it
                     authViewModel.clearError()
                 },
-                label = { Text("Email") },
-                enabled = false, // Email should typically not be editable
+                label = { Text("Email", color = MaterialTheme.colorScheme.onBackground) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp)
+                    .padding(bottom = 16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                    cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                )
             )
 
             Button(
                 onClick = {
-                    if (validateInputs(firstName, lastName)) {
+                    if (firstName.isNotBlank() && lastName.isNotBlank() && email.isNotBlank()) {
                         authViewModel.updateProfile(
                             firstName,
                             lastName,
-                            phoneNumber,
-                            onComplete = { success ->
-                                if (success) {
-                                    showSuccessDialog = true
-                                }
+                            email
+                        ) { success ->
+                            if (success) {
+                                showSuccessDialog = true
                             }
-                        )
+                        }
                     } else {
                         authViewModel.setError("Please fill in all required fields")
                     }
@@ -135,7 +161,17 @@ fun EditProfileScreen(
                     contentColor = MaterialTheme.colorScheme.background
                 )
             ) {
-                Text("Save Changes")
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.background
+                    )
+                } else {
+                    Text(
+                        "Save Changes",
+                        color = MaterialTheme.colorScheme.background
+                    )
+                }
             }
         }
 
@@ -154,7 +190,9 @@ fun EditProfileScreen(
                             onNavigateBack()
                         }
                     ) {
-                        Text("OK")
+                        Text("OK",
+                                  color = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 }
             )

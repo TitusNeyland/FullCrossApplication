@@ -540,7 +540,9 @@ private fun DeleteConfirmationDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Cancel",
+                           color = MaterialTheme.colorScheme.onBackground
+                )
             }
         }
     )
@@ -926,7 +928,8 @@ private fun CommentItem(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text("Cancel",
+                              color = MaterialTheme.colorScheme.onBackground)
                 }
             }
         )
