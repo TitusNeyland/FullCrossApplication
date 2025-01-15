@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -56,11 +57,18 @@ fun LoginScreen(
                 isError = false
                 errorMessage = null
             },
-            label = { Text("Email") },
+            label = { Text("Email", color = MaterialTheme.colorScheme.onBackground) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
             isError = isError,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -73,12 +81,19 @@ fun LoginScreen(
                 isError = false
                 errorMessage = null
             },
-            label = { Text("Password") },
+            label = { Text("Password", color = MaterialTheme.colorScheme.onBackground) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            visualTransformation = PasswordVisualTransformation(),
             isError = isError,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+            )
         )
 
         // Error message
@@ -112,8 +127,19 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Sign up link
-        TextButton(onClick = onSignUpClick) {
-            Text("Don't have an account? Sign up")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text("Don't have an account? ")
+            TextButton(
+                onClick = onSignUpClick,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onBackground
+                )
+            ) {
+                Text("Sign up")
+            }
         }
 
         // Forgot password link

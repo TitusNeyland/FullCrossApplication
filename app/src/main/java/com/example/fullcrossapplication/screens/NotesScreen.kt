@@ -39,6 +39,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -87,6 +89,7 @@ import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -146,7 +149,7 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
                             "Add Note" 
                         else 
                             "Start Discussion",
-                        tint = MaterialTheme.colorScheme.onSurface
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
             },
@@ -158,17 +161,40 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
         // Tab Row
         TabRow(
             selectedTabIndex = selectedTab.ordinal,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            indicator = { tabPositions ->
+                TabRowDefaults.Indicator(
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab.ordinal]),
+                    // Use a subtle green color
+                    color = Color(0xFF4CAF50).copy(alpha = 0.6f)  // Material Green 500 with 60% opacity
+                )
+            }
         ) {
             Tab(
                 selected = selectedTab == NotesTab.PERSONAL_NOTES,
                 onClick = { selectedTab = NotesTab.PERSONAL_NOTES },
-                text = { Text("My Notes") }
+                text = { 
+                    Text(
+                        "My Notes",
+                        color = if (selectedTab == NotesTab.PERSONAL_NOTES)
+                            MaterialTheme.colorScheme.onBackground
+                        else
+                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    ) 
+                }
             )
             Tab(
                 selected = selectedTab == NotesTab.DISCUSSIONS,
                 onClick = { selectedTab = NotesTab.DISCUSSIONS },
-                text = { Text("Discussions") }
+                text = { 
+                    Text(
+                        "Discussions",
+                        color = if (selectedTab == NotesTab.DISCUSSIONS)
+                            MaterialTheme.colorScheme.onBackground
+                        else
+                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                    ) 
+                }
             )
         }
 
@@ -283,7 +309,7 @@ private fun DateCard(
                     Icon(
                         imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                         contentDescription = if (isExpanded) "Collapse" else "Expand",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.onBackground
                     )
                 }
             }
@@ -330,8 +356,8 @@ private fun NoteItem(
                 if (note.verseReference != null) {
                     Text(
                         text = note.verseReference,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color(0xFF4CAF50),
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
@@ -404,25 +430,46 @@ private fun AddNoteDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title") },
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text("Title", color = MaterialTheme.colorScheme.onBackground) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
                 )
                 OutlinedTextField(
                     value = content,
                     onValueChange = { content = it },
-                    label = { Text("Content") },
+                    label = { Text("Content", color = MaterialTheme.colorScheme.onBackground) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp),
-                    minLines = 3
+                    minLines = 3,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
                 )
                 OutlinedTextField(
                     value = verseReference,
                     onValueChange = { verseReference = it },
-                    label = { Text("Verse Reference (Optional)") },
+                    label = { Text("Verse Reference (Optional)", color = MaterialTheme.colorScheme.onBackground) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp)
+                        .padding(top = 8.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
                 )
                 Row(
                     modifier = Modifier
@@ -436,15 +483,15 @@ private fun AddNoteDialog(
                             modifier = Modifier.padding(horizontal = 4.dp),
                             shape = MaterialTheme.shapes.small,
                             color = if (noteType == type) 
-                                MaterialTheme.colorScheme.primaryContainer 
+                                Color(0xFF4CAF50).copy(alpha = 0.5f)  // More visible green background when selected
                             else 
-                                MaterialTheme.colorScheme.surface,
+                                Color(0xFF4CAF50).copy(alpha = 0.1f),  // Light green background when not selected
                             border = BorderStroke(
                                 1.dp,
                                 if (noteType == type)
-                                    MaterialTheme.colorScheme.primary
+                                    Color(0xFF2E7D32)  // Darker green border when selected
                                 else
-                                    MaterialTheme.colorScheme.outline
+                                    Color(0xFF2E7D32).copy(alpha = 0.7f)  // Slightly transparent dark green when not selected
                             )
                         ) {
                             Text(
@@ -452,9 +499,9 @@ private fun AddNoteDialog(
                                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = if (noteType == type)
-                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                    Color(0xFF1B5E20)  // Even darker green text when selected (Green 900)
                                 else
-                                    MaterialTheme.colorScheme.onSurface
+                                    Color(0xFF2E7D32)  // Dark green text when not selected (Green 800)
                             )
                         }
                     }
@@ -472,13 +519,21 @@ private fun AddNoteDialog(
                             noteType
                         )
                     }
-                }
+                },
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onBackground
+                )
             ) {
                 Text("Add")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onBackground
+                )
+            ) {
                 Text("Cancel")
             }
         }
@@ -506,7 +561,9 @@ private fun DeleteConfirmationDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text("Cancel",
+                           color = MaterialTheme.colorScheme.onBackground
+                )
             }
         }
     )
@@ -723,7 +780,7 @@ private fun FullDiscussionSheet(
                             contentDescription = "Like",
                             modifier = Modifier.size(16.dp),
                             tint = if (currentUserId in updatedDiscussion.likedByUsers)
-                                MaterialTheme.colorScheme.primary
+                                MaterialTheme.colorScheme.onBackground
                             else
                                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                         )
@@ -786,9 +843,16 @@ private fun FullDiscussionSheet(
                 OutlinedTextField(
                     value = newCommentText,
                     onValueChange = { newCommentText = it },
-                    label = { Text("Add a comment") },
+                    label = { Text("Add a comment", color = MaterialTheme.colorScheme.onBackground) },
                     modifier = Modifier.weight(1f),
                     maxLines = 3,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    ),
                     trailingIcon = {
                         IconButton(
                             onClick = {
@@ -803,7 +867,7 @@ private fun FullDiscussionSheet(
                                 Icons.Default.Send,
                                 contentDescription = "Send comment",
                                 tint = if (newCommentText.isNotBlank()) 
-                                    MaterialTheme.colorScheme.primary 
+                                    MaterialTheme.colorScheme.onBackground 
                                 else 
                                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                             )
@@ -892,7 +956,8 @@ private fun CommentItem(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text("Cancel",
+                              color = MaterialTheme.colorScheme.onBackground)
                 }
             }
         )
@@ -933,21 +998,35 @@ private fun AddDiscussionDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title") },
+                    label = { Text("Title", color = MaterialTheme.colorScheme.onBackground) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 8.dp),
-                    singleLine = true
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
                 )
                 
                 OutlinedTextField(
                     value = content,
                     onValueChange = { content = it },
-                    label = { Text("Share your thoughts...") },
+                    label = { Text("Share your thoughts...", color = MaterialTheme.colorScheme.onBackground) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(120.dp),
-                    maxLines = 5
+                    maxLines = 5,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                        cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                    )
                 )
             }
         },
@@ -959,13 +1038,21 @@ private fun AddDiscussionDialog(
                         onDismiss()
                     }
                 },
-                enabled = title.isNotBlank() && content.isNotBlank()
+                enabled = title.isNotBlank() && content.isNotBlank(),
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onBackground
+                )
             ) {
                 Text("Post")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onBackground
+                )
+            ) {
                 Text("Cancel")
             }
         }

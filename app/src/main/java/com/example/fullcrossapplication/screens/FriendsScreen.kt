@@ -35,6 +35,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -62,7 +63,7 @@ fun FriendsScreen(
                 title = { Text("My Friends") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
                     }
                 }
             )
@@ -99,7 +100,7 @@ fun FriendsScreen(
                             imageVector = Icons.Default.People,
                             contentDescription = null,
                             modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
@@ -150,7 +151,7 @@ private fun FriendItem(
                 Icon(
                     Icons.Default.Person,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             },
             trailingContent = {
@@ -174,7 +175,7 @@ private fun FriendItem(
                         Icon(
                             Icons.Default.Check,
                             contentDescription = "Friends",
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = Color(0xFF4CAF52)
                         )
                     }
                     FriendshipStatus.DECLINED -> {

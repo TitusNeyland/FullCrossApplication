@@ -100,7 +100,7 @@ fun HelpAndFaqScreen(
                         text = category,
                         style = MaterialTheme.typography.titleLarge,
                         modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onBackground,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -143,12 +143,12 @@ private fun FaqCard(faqItem: FaqItem) {
                     text = faqItem.question,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Icon(
                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = if (expanded) "Show less" else "Show more",
-                    tint = MaterialTheme.colorScheme.primary
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
 
@@ -157,7 +157,7 @@ private fun FaqCard(faqItem: FaqItem) {
                 Text(
                     text = faqItem.answer,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f)
                 )
             }
         }

@@ -47,6 +47,9 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,6 +61,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -70,6 +74,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -191,7 +196,7 @@ fun AccountScreen(
                     Icon(
                         imageVector = Icons.Default.People,
                         contentDescription = "Friends",
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.size(24.dp)
                     )
                     Column(
@@ -212,7 +217,7 @@ fun AccountScreen(
                 Icon(
                     Icons.Default.ChevronRight,
                     contentDescription = "View Friends",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onBackground
                 )
             }
         }
@@ -275,7 +280,15 @@ fun AccountScreen(
                             showNotificationDialog = true
                         }
                         notificationsEnabled = checked
-                    }
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color(0xFF4CAF50),  // Material Green 500
+                        checkedTrackColor = Color(0xFF4CAF50).copy(alpha = 0.5f),
+                        checkedBorderColor = Color(0xFF4CAF50),
+                        uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        uncheckedBorderColor = MaterialTheme.colorScheme.outline
+                    )
                 )
             },
             modifier = Modifier.clickable {
@@ -310,7 +323,15 @@ fun AccountScreen(
             trailingContent = {
                 Switch(
                     checked = isDarkMode,
-                    onCheckedChange = { themeViewModel.toggleDarkMode() }
+                    onCheckedChange = { themeViewModel.toggleDarkMode() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color(0xFF4CAF50),  // Material Green 500
+                        checkedTrackColor = Color(0xFF4CAF50).copy(alpha = 0.5f),
+                        checkedBorderColor = Color(0xFF4CAF50),
+                        uncheckedThumbColor = MaterialTheme.colorScheme.outline,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        uncheckedBorderColor = MaterialTheme.colorScheme.outline
+                    )
                 )
             }
         )
@@ -378,7 +399,11 @@ fun AccountScreen(
             onClick = { showFriendsList = true },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 16.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.onBackground,
+                contentColor = MaterialTheme.colorScheme.background
+            )
         ) {
             Icon(
                 Icons.Default.People,
@@ -400,13 +425,21 @@ fun AccountScreen(
                     onClick = {
                         showLogoutDialog = false
                         onLogout()
-                    }
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onBackground
+                    )
                 ) {
                     Text("Logout")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
+                TextButton(
+                    onClick = { showLogoutDialog = false },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onBackground
+                    )
+                ) {
                     Text("Cancel")
                 }
             }
@@ -437,7 +470,9 @@ fun AccountScreen(
                         notificationsEnabled = notificationManager.areNotificationsEnabled()
                     }
                 ) {
-                    Text("Open Settings")
+                    Text("Open Settings",
+                              color = MaterialTheme.colorScheme.onBackground
+                    )
                 }
             },
             dismissButton = {
@@ -447,7 +482,9 @@ fun AccountScreen(
                         notificationsEnabled = notificationManager.areNotificationsEnabled()
                     }
                 ) {
-                    Text("Cancel")
+                    Text("Cancel",
+                              color = MaterialTheme.colorScheme.onBackground
+                    )
                 }
             }
         )
@@ -511,7 +548,7 @@ fun FriendsList(
                                 Icon(
                                     Icons.Default.Person,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
+                                    tint = MaterialTheme.colorScheme.onBackground
                                 )
                             },
                             trailingContent = {
@@ -528,7 +565,7 @@ fun FriendsList(
                                     Icon(
                                         Icons.Default.Clear,
                                         contentDescription = "Remove friend",
-                                        tint = MaterialTheme.colorScheme.error
+                                        tint = MaterialTheme.colorScheme.onBackground
                                     )
                                 }
                             }
@@ -539,7 +576,12 @@ fun FriendsList(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onBackground
+                )
+            ) {
                 Text("Close")
             }
         }
@@ -567,7 +609,7 @@ private fun ProfileImage(
                 .size(120.dp)
                 .border(
                     width = 2.dp,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
                     shape = CircleShape
                 )
                 .clickable { galleryLauncher.launch("image/*") },
@@ -587,7 +629,7 @@ private fun ProfileImage(
                     imageVector = Icons.Default.AccountCircle,
                     contentDescription = "Profile Picture",
                     modifier = Modifier.size(120.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                 )
             }
         }
@@ -596,10 +638,10 @@ private fun ProfileImage(
         Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .offset(x = (-8).dp, y = (-4).dp)  // Adjusted to be closer to bottom edge
-                .size(28.dp)  // Slightly smaller size
+                .offset(x = (-8).dp, y = (-4).dp)
+                .size(28.dp)
                 .background(
-                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.onBackground,
                     CircleShape
                 ),
             contentAlignment = Alignment.Center
@@ -607,8 +649,8 @@ private fun ProfileImage(
             Icon(
                 imageVector = Icons.Default.CameraAlt,
                 contentDescription = "Change Profile Picture",
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(16.dp)  // Slightly smaller icon
+                tint = MaterialTheme.colorScheme.background,
+                modifier = Modifier.size(16.dp)
             )
         }
     }
