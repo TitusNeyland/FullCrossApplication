@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +24,8 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import com.example.fullcrossapplication.utils.BibleTextFormatter
 import android.content.Intent
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
@@ -44,6 +47,12 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
     val verseOfDay by viewModel.verseOfDay.collectAsStateWithLifecycle()
     val isLoadingVerse by viewModel.isLoadingVerse.collectAsStateWithLifecycle()
     val verseError by viewModel.verseError.collectAsStateWithLifecycle()
+    
+    // Add scroll state
+    val scrollState = rememberLazyListState()
+    val isScrolled by remember {
+        derivedStateOf { scrollState.firstVisibleItemIndex > 0 || scrollState.firstVisibleItemScrollOffset > 0 }
+    }
 
     Column(
         modifier = Modifier
@@ -91,9 +100,9 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
         // Content
         Box(modifier = Modifier.weight(1f)) {
             when {
-                // Show chapter content
                 currentChapter != null -> {
                     LazyColumn(
+                        state = scrollState,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 16.dp)
@@ -158,9 +167,14 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                         }
                     }
                 }
-                // Show book selection
                 selectedBible != null && selectedBook == null -> {
-                    LazyColumn {
+                    LazyColumn(
+                        state = scrollState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        contentPadding = PaddingValues(vertical = 8.dp)
+                    ) {
                         items(books) { book ->
                             BookItem(book) {
                                 viewModel.setSelectedBook(it)
@@ -169,7 +183,6 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                         }
                     }
                 }
-                // Show bible versions and verse of the day
                 else -> {
                     Column {
                         // Enhanced search field
@@ -198,140 +211,146 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                             singleLine = true
                         )
 
-                        // Enhanced Verse of the Day Card
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            shape = MaterialTheme.shapes.large,
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                            ),
-                            elevation = CardDefaults.cardElevation(
-                                defaultElevation = 0.dp,
-                                pressedElevation = 0.dp
-                            )
+                        // Animated Verse of the Day Card
+                        AnimatedVisibility(
+                            visible = !isScrolled && searchQuery.isEmpty(),
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
                         ) {
-                            Column(
-                                modifier = Modifier.padding(20.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                shape = MaterialTheme.shapes.large,
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                                ),
+                                elevation = CardDefaults.cardElevation(
+                                    defaultElevation = 0.dp,
+                                    pressedElevation = 0.dp
+                                )
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                Column(
+                                    modifier = Modifier.padding(20.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Icon(
-                                            imageVector = Icons.Default.AutoAwesome,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.onBackground
-                                        )
-                                        Text(
-                                            text = "Verse of the Day",
-                                            style = MaterialTheme.typography.titleMedium,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        // Share button
-                                        IconButton(
-                                            onClick = {
-                                                val verseOfDay = viewModel.verseOfDay.value
-                                                if (verseOfDay != null) {
-                                                    val shareIntent = Intent().apply {
-                                                        action = Intent.ACTION_SEND
-                                                        type = "text/plain"
-                                                        putExtra(
-                                                            Intent.EXTRA_TEXT,
-                                                            """
-                                                            Verse of the Day:
-                                                            
-                                                            "${verseOfDay.text}"
-                                                            - ${verseOfDay.reference}
-                                                            
-                                                            Shared from the Full Cross App
-                                                            """.trimIndent()
-                                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.AutoAwesome,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onBackground
+                                            )
+                                            Text(
+                                                text = "Verse of the Day",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            // Share button
+                                            IconButton(
+                                                onClick = {
+                                                    val verseOfDay = viewModel.verseOfDay.value
+                                                    if (verseOfDay != null) {
+                                                        val shareIntent = Intent().apply {
+                                                            action = Intent.ACTION_SEND
+                                                            type = "text/plain"
+                                                            putExtra(
+                                                                Intent.EXTRA_TEXT,
+                                                                """
+                                                                Verse of the Day:
+                                                                
+                                                                "${verseOfDay.text}"
+                                                                - ${verseOfDay.reference}
+                                                                
+                                                                Shared from the Full Cross App
+                                                                """.trimIndent()
+                                                            )
+                                                        }
+                                                        context.startActivity(Intent.createChooser(shareIntent, "Share Verse of the Day"))
                                                     }
-                                                    context.startActivity(Intent.createChooser(shareIntent, "Share Verse of the Day"))
-                                                }
-                                            },
-                                            modifier = Modifier
-                                                .size(32.dp)
-                                                .background(
-                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                                    shape = CircleShape
+                                                },
+                                                modifier = Modifier
+                                                    .size(32.dp)
+                                                    .background(
+                                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                                        shape = CircleShape
+                                                    )
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Share,
+                                                    contentDescription = "Share Verse of the Day",
+                                                    modifier = Modifier.size(16.dp),
+                                                    tint = MaterialTheme.colorScheme.onBackground
                                                 )
-                                        ) {
-                                            Icon(
-                                                Icons.Default.Share,
-                                                contentDescription = "Share Verse of the Day",
-                                                modifier = Modifier.size(16.dp),
-                                                tint = MaterialTheme.colorScheme.onBackground
-                                            )
-                                        }
-                                        // Refresh button
-                                        IconButton(
-                                            onClick = { viewModel.refreshVerseOfDay() },
-                                            modifier = Modifier
-                                                .size(32.dp)
-                                                .background(
-                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                                    shape = CircleShape
+                                            }
+                                            // Refresh button
+                                            IconButton(
+                                                onClick = { viewModel.refreshVerseOfDay() },
+                                                modifier = Modifier
+                                                    .size(32.dp)
+                                                    .background(
+                                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                                        shape = CircleShape
+                                                    )
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Refresh,
+                                                    contentDescription = "Refresh verse",
+                                                    modifier = Modifier.size(16.dp),
+                                                    tint = MaterialTheme.colorScheme.onBackground
                                                 )
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Refresh,
-                                                contentDescription = "Refresh verse",
-                                                modifier = Modifier.size(16.dp),
-                                                tint = MaterialTheme.colorScheme.onBackground
-                                            )
+                                            }
                                         }
                                     }
-                                }
-                                
-                                if (isLoadingVerse) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier
-                                            .padding(24.dp)
-                                            .size(24.dp),
-                                        color = MaterialTheme.colorScheme.onBackground
-                                    )
-                                } else if (verseError != null) {
-                                    Text(
-                                        text = verseError ?: "Error loading verse",
-                                        color = MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.padding(16.dp)
-                                    )
-                                } else {
-                                    verseOfDay?.let { verse ->
-                                        Spacer(modifier = Modifier.height(16.dp))
-                                        Text(
-                                            text = verse.text,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            textAlign = TextAlign.Center,
-                                            modifier = Modifier.padding(horizontal = 8.dp),
-                                            lineHeight = MaterialTheme.typography.bodyLarge.fontSize * 1.5
-                                        )
-                                        Spacer(modifier = Modifier.height(12.dp))
-                                        Text(
-                                            text = verse.reference,
-                                            style = MaterialTheme.typography.labelLarge,
-                                            color = MaterialTheme.colorScheme.onBackground,
-                                            fontWeight = FontWeight.Medium,
+                                    
+                                    if (isLoadingVerse) {
+                                        CircularProgressIndicator(
                                             modifier = Modifier
-                                                .background(
-                                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                                    shape = MaterialTheme.shapes.small
-                                                )
-                                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                                .padding(24.dp)
+                                                .size(24.dp),
+                                            color = MaterialTheme.colorScheme.onBackground
                                         )
+                                    } else if (verseError != null) {
+                                        Text(
+                                            text = verseError ?: "Error loading verse",
+                                            color = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.padding(16.dp)
+                                        )
+                                    } else {
+                                        verseOfDay?.let { verse ->
+                                            Spacer(modifier = Modifier.height(16.dp))
+                                            Text(
+                                                text = verse.text,
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier.padding(horizontal = 8.dp),
+                                                lineHeight = MaterialTheme.typography.bodyLarge.fontSize * 1.5
+                                            )
+                                            Spacer(modifier = Modifier.height(12.dp))
+                                            Text(
+                                                text = verse.reference,
+                                                style = MaterialTheme.typography.labelLarge,
+                                                color = MaterialTheme.colorScheme.onBackground,
+                                                fontWeight = FontWeight.Medium,
+                                                modifier = Modifier
+                                                    .background(
+                                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                                        shape = MaterialTheme.shapes.small
+                                                    )
+                                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -346,54 +365,15 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
                             thickness = 1.dp
                         )
 
-                        // Enhanced Bible versions list
+                        // Bible versions list
                         LazyColumn(
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            state = scrollState
                         ) {
-                            items(bibles.filter { bible ->
-                                searchQuery.isEmpty() || bible.name.contains(searchQuery, ignoreCase = true) ||
-                                        bible.language.name.contains(searchQuery, ignoreCase = true)
+                            items(bibles.filter {
+                                it.name.contains(searchQuery, ignoreCase = true)
                             }) { bible ->
-                                Card(
-                                    onClick = { 
-                                        viewModel.setSelectedBible(bible)
-                                        viewModel.loadBooks(bible.id)
-                                    },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = MaterialTheme.shapes.medium,
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surface
-                                    ),
-                                    elevation = CardDefaults.cardElevation(
-                                        defaultElevation = 2.dp
-                                    )
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(16.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column {
-                                            Text(
-                                                text = bible.name,
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.SemiBold
-                                            )
-                                            Text(
-                                                text = bible.language.name,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                            )
-                                        }
-                                        Icon(
-                                            imageVector = Icons.Default.ChevronRight,
-                                            contentDescription = "Select Bible",
-                                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-                                        )
-                                    }
+                                BibleItem(bible) {
+                                    viewModel.setSelectedBible(it)
                                 }
                             }
                         }

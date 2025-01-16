@@ -91,7 +91,7 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun loadBooks(bibleId: String) {
+    private fun loadBooks(bibleId: String) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
@@ -162,6 +162,11 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setSelectedBible(bible: Bible?) {
         _selectedBible.value = bible
+        if (bible != null) {
+            loadBooks(bible.id) // Load books for the selected Bible
+        } else {
+            _books.value = emptyList() // Clear books if no Bible is selected
+        }
     }
 
     fun setSelectedBook(book: Book?) {
