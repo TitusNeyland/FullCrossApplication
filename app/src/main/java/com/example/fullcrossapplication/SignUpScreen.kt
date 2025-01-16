@@ -157,7 +157,7 @@ fun SignUpScreen(
             onClick = {
                 if (firstName.isNotBlank() && lastName.isNotBlank() && 
                     email.isNotBlank() && password.isNotBlank()) {
-                    authViewModel.signUp(firstName, lastName, email, password)
+                    authViewModel.signUp(email, password, firstName, lastName)
                 }
             },
             modifier = Modifier.fillMaxWidth(),
@@ -201,10 +201,11 @@ private fun validateInputs(
     password: String,
     confirmPassword: String
 ): Boolean {
+    val emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+"
     return when {
         firstName.isBlank() -> false
         lastName.isBlank() -> false
-        !email.contains("@") -> false
+        !email.matches(emailPattern.toRegex()) -> false
         password.length < 6 -> false
         password != confirmPassword -> false
         else -> true
