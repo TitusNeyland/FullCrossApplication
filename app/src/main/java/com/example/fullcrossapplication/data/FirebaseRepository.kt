@@ -23,6 +23,7 @@ class FirebaseRepository {
         phoneNumber: String = ""
     ): Result<User> {
         return try {
+            println("Email passed to Firebase: '${email.trim()}'")
             val authResult = auth.createUserWithEmailAndPassword(email, password).await()
             val uid = authResult.user?.uid ?: throw Exception("Failed to get user ID")
             
