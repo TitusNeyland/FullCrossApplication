@@ -29,6 +29,9 @@ import androidx.compose.animation.core.*
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.SnackbarHostState
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.width
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +50,8 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
     val verseOfDay by viewModel.verseOfDay.collectAsStateWithLifecycle()
     val isLoadingVerse by viewModel.isLoadingVerse.collectAsStateWithLifecycle()
     val verseError by viewModel.verseError.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     
     // Add scroll state
     val scrollState = rememberLazyListState()
@@ -54,352 +59,387 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
         derivedStateOf { scrollState.firstVisibleItemIndex > 0 || scrollState.firstVisibleItemScrollOffset > 0 }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        // Top Navigation Bar
-        CenterAlignedTopAppBar(
-            title = {
-                Text(
-                    text = when {
-                        currentChapter != null -> selectedBook?.name ?: ""
-                        selectedBook != null -> "Select Chapter"
-                        selectedBible != null -> "Select Book"
-                        else -> "Select Bible Version"
-                    }
-                )
-            },
-            navigationIcon = {
-                if (selectedBible != null) {
-                    IconButton(
-                        onClick = {
-                            when {
-                                currentChapter != null -> {
-                                    viewModel.clearChapter()
-                                }
-                                selectedBook != null -> {
-                                    viewModel.setSelectedBook(null)
-                                }
-                                selectedBible != null -> {
-                                    viewModel.setSelectedBible(null)
-                                }
-                            }
+    Scaffold(
+        snackbarHost = { 
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(16.dp)
+            ) { data ->
+                Snackbar(
+                    action = {
+                        TextButton(
+                            onClick = { snackbarHostState.currentSnackbarData?.dismiss() }
+                        ) {
+                            Text("Dismiss", color = MaterialTheme.colorScheme.inversePrimary)
                         }
+                    },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = Color.Black
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
                     ) {
+                        Text(data.visuals.message)
+                        Spacer(modifier = Modifier.width(8.dp))
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Go back"
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Success",
+                            tint = Color(0xFF4CAF50),
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
             }
-        )
-
-        // Content
-        Box(modifier = Modifier.weight(1f)) {
-            when {
-                currentChapter != null -> {
-                    LazyColumn(
-                        state = scrollState,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp)
-                    ) {
-                        item {
-                            Column {
-                                // Add a row for the title and next chapter button
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 16.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    // Previous Chapter button
-                                    IconButton(
-                                        onClick = {
-                                            selectedBible?.let { bible ->
-                                                viewModel.loadPreviousChapter(bible.id)
-                                            }
-                                        },
-                                        enabled = viewModel.currentChapterNumber.collectAsStateWithLifecycle().value?.let { it > 1 } ?: false
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.NavigateBefore,
-                                            contentDescription = "Previous Chapter"
-                                        )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Top Navigation Bar
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = when {
+                            currentChapter != null -> selectedBook?.name ?: ""
+                            selectedBook != null -> "Select Chapter"
+                            selectedBible != null -> "Select Book"
+                            else -> "Select Bible Version"
+                        }
+                    )
+                },
+                navigationIcon = {
+                    if (selectedBible != null) {
+                        IconButton(
+                            onClick = {
+                                when {
+                                    currentChapter != null -> {
+                                        viewModel.clearChapter()
                                     }
-
-                                    // Chapter title
-                                    Text(
-                                        text = "${selectedBook?.name} Chapter ${currentChapter!!.number}",
-                                        style = MaterialTheme.typography.titleLarge
-                                    )
-
-                                    // Next Chapter button
-                                    IconButton(
-                                        onClick = {
-                                            selectedBible?.let { bible ->
-                                                viewModel.loadNextChapter(bible.id)
-                                            }
-                                        }
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.NavigateNext,
-                                            contentDescription = "Next Chapter"
-                                        )
+                                    selectedBook != null -> {
+                                        viewModel.setSelectedBook(null)
+                                    }
+                                    selectedBible != null -> {
+                                        viewModel.setSelectedBible(null)
                                     }
                                 }
-
-                                // Chapter content
-                                BibleTextFormatter.formatBibleText(currentChapter!!.content).forEach { verse ->
-                                    VerseItem(
-                                        verse = verse,
-                                        onVerseClick = {
-                                            viewModel.setSelectedVerse("${selectedBook?.name} ${currentChapter?.number}:${verse.verseNumber}")
-                                            showNoteDialog = true
-                                        }
-                                    )
-                                }
                             }
-                        }
-                    }
-                }
-                selectedBible != null && selectedBook == null -> {
-                    LazyColumn(
-                        state = scrollState,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 16.dp),
-                        contentPadding = PaddingValues(vertical = 8.dp)
-                    ) {
-                        items(books) { book ->
-                            BookItem(book) {
-                                viewModel.setSelectedBook(it)
-                                viewModel.loadChapter(selectedBible!!.id, "${it.id}.1")
-                            }
-                        }
-                    }
-                }
-                else -> {
-                    Column {
-                        // Enhanced search field
-                        OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp)
-                                .padding(top = 8.dp, bottom = 16.dp),
-                            placeholder = { Text("Search Bible versions...") },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Default.Search,
-                                    contentDescription = "Search",
-                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                )
-                            },
-                            shape = MaterialTheme.shapes.large,
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                            ),
-                            singleLine = true
-                        )
-
-                        // Animated Verse of the Day Card
-                        AnimatedVisibility(
-                            visible = !isScrolled && searchQuery.isEmpty(),
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically()
                         ) {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                                shape = MaterialTheme.shapes.large,
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                                ),
-                                elevation = CardDefaults.cardElevation(
-                                    defaultElevation = 0.dp,
-                                    pressedElevation = 0.dp
-                                )
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(20.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Go back"
+                            )
+                        }
+                    }
+                }
+            )
+
+            // Content
+            Box(modifier = Modifier.weight(1f)) {
+                when {
+                    currentChapter != null -> {
+                        LazyColumn(
+                            state = scrollState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp)
+                        ) {
+                            item {
+                                Column {
+                                    // Add a row for the title and next chapter button
                                     Row(
-                                        modifier = Modifier.fillMaxWidth(),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 16.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        // Previous Chapter button
+                                        IconButton(
+                                            onClick = {
+                                                selectedBible?.let { bible ->
+                                                    viewModel.loadPreviousChapter(bible.id)
+                                                }
+                                            },
+                                            enabled = viewModel.currentChapterNumber.collectAsStateWithLifecycle().value?.let { it > 1 } ?: false
                                         ) {
                                             Icon(
-                                                imageVector = Icons.Default.AutoAwesome,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.onBackground
-                                            )
-                                            Text(
-                                                text = "Verse of the Day",
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.Bold
+                                                imageVector = Icons.Default.NavigateBefore,
+                                                contentDescription = "Previous Chapter"
                                             )
                                         }
-                                        Row(
-                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+
+                                        // Chapter title
+                                        Text(
+                                            text = "${selectedBook?.name} Chapter ${currentChapter!!.number}",
+                                            style = MaterialTheme.typography.titleLarge
+                                        )
+
+                                        // Next Chapter button
+                                        IconButton(
+                                            onClick = {
+                                                selectedBible?.let { bible ->
+                                                    viewModel.loadNextChapter(bible.id)
+                                                }
+                                            }
                                         ) {
-                                            // Share button
-                                            IconButton(
-                                                onClick = {
-                                                    val verseOfDay = viewModel.verseOfDay.value
-                                                    if (verseOfDay != null) {
-                                                        val shareIntent = Intent().apply {
-                                                            action = Intent.ACTION_SEND
-                                                            type = "text/plain"
-                                                            putExtra(
-                                                                Intent.EXTRA_TEXT,
-                                                                """
-                                                                Verse of the Day:
-                                                                
-                                                                "${verseOfDay.text}"
-                                                                - ${verseOfDay.reference}
-                                                                
-                                                                Shared from the Full Cross App
-                                                                """.trimIndent()
-                                                            )
-                                                        }
-                                                        context.startActivity(Intent.createChooser(shareIntent, "Share Verse of the Day"))
-                                                    }
-                                                },
-                                                modifier = Modifier
-                                                    .size(32.dp)
-                                                    .background(
-                                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                                        shape = CircleShape
-                                                    )
-                                            ) {
-                                                Icon(
-                                                    Icons.Default.Share,
-                                                    contentDescription = "Share Verse of the Day",
-                                                    modifier = Modifier.size(16.dp),
-                                                    tint = MaterialTheme.colorScheme.onBackground
-                                                )
-                                            }
-                                            // Refresh button
-                                            IconButton(
-                                                onClick = { viewModel.refreshVerseOfDay() },
-                                                modifier = Modifier
-                                                    .size(32.dp)
-                                                    .background(
-                                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                                        shape = CircleShape
-                                                    )
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Refresh,
-                                                    contentDescription = "Refresh verse",
-                                                    modifier = Modifier.size(16.dp),
-                                                    tint = MaterialTheme.colorScheme.onBackground
-                                                )
-                                            }
+                                            Icon(
+                                                imageVector = Icons.Default.NavigateNext,
+                                                contentDescription = "Next Chapter"
+                                            )
                                         }
                                     }
-                                    
-                                    if (isLoadingVerse) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier
-                                                .padding(24.dp)
-                                                .size(24.dp),
-                                            color = MaterialTheme.colorScheme.onBackground
+
+                                    // Chapter content
+                                    BibleTextFormatter.formatBibleText(currentChapter!!.content).forEach { verse ->
+                                        VerseItem(
+                                            verse = verse,
+                                            onVerseClick = {
+                                                viewModel.setSelectedVerse("${selectedBook?.name} ${currentChapter?.number}:${verse.verseNumber}")
+                                                showNoteDialog = true
+                                            }
                                         )
-                                    } else if (verseError != null) {
-                                        Text(
-                                            text = verseError ?: "Error loading verse",
-                                            color = MaterialTheme.colorScheme.error,
-                                            modifier = Modifier.padding(16.dp)
-                                        )
-                                    } else {
-                                        verseOfDay?.let { verse ->
-                                            Spacer(modifier = Modifier.height(16.dp))
-                                            Text(
-                                                text = verse.text,
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                textAlign = TextAlign.Center,
-                                                modifier = Modifier.padding(horizontal = 8.dp),
-                                                lineHeight = MaterialTheme.typography.bodyLarge.fontSize * 1.5
-                                            )
-                                            Spacer(modifier = Modifier.height(12.dp))
-                                            Text(
-                                                text = verse.reference,
-                                                style = MaterialTheme.typography.labelLarge,
-                                                color = MaterialTheme.colorScheme.onBackground,
-                                                fontWeight = FontWeight.Medium,
-                                                modifier = Modifier
-                                                    .background(
-                                                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                                        shape = MaterialTheme.shapes.small
-                                                    )
-                                                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                                            )
-                                        }
                                     }
                                 }
                             }
                         }
-
-                        // Add divider
-                        Divider(
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                            thickness = 1.dp
-                        )
-
-                        // Bible versions list
+                    }
+                    selectedBible != null && selectedBook == null -> {
                         LazyColumn(
-                            state = scrollState
+                            state = scrollState,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 16.dp),
+                            contentPadding = PaddingValues(vertical = 8.dp)
                         ) {
-                            items(bibles.filter {
-                                it.name.contains(searchQuery, ignoreCase = true)
-                            }) { bible ->
-                                BibleItem(bible) {
-                                    viewModel.setSelectedBible(it)
+                            items(books) { book ->
+                                BookItem(book) {
+                                    viewModel.setSelectedBook(it)
+                                    viewModel.loadChapter(selectedBible!!.id, "${it.id}.1")
+                                }
+                            }
+                        }
+                    }
+                    else -> {
+                        Column {
+                            // Enhanced search field
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 8.dp, bottom = 16.dp),
+                                placeholder = { Text("Search Bible versions...") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = "Search",
+                                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                },
+                                shape = MaterialTheme.shapes.large,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                                ),
+                                singleLine = true
+                            )
+
+                            // Animated Verse of the Day Card
+                            AnimatedVisibility(
+                                visible = !isScrolled && searchQuery.isEmpty(),
+                                enter = fadeIn() + expandVertically(),
+                                exit = fadeOut() + shrinkVertically()
+                            ) {
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    shape = MaterialTheme.shapes.large,
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                                    ),
+                                    elevation = CardDefaults.cardElevation(
+                                        defaultElevation = 0.dp,
+                                        pressedElevation = 0.dp
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(20.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.AutoAwesome,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.onBackground
+                                                )
+                                                Text(
+                                                    text = "Verse of the Day",
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                // Share button
+                                                IconButton(
+                                                    onClick = {
+                                                        val verseOfDay = viewModel.verseOfDay.value
+                                                        if (verseOfDay != null) {
+                                                            val shareIntent = Intent().apply {
+                                                                action = Intent.ACTION_SEND
+                                                                type = "text/plain"
+                                                                putExtra(
+                                                                    Intent.EXTRA_TEXT,
+                                                                    """
+                                                                    Verse of the Day:
+                                                                    
+                                                                    "${verseOfDay.text}"
+                                                                    - ${verseOfDay.reference}
+                                                                    
+                                                                    Shared from the Full Cross App
+                                                                    """.trimIndent()
+                                                                )
+                                                            }
+                                                            context.startActivity(Intent.createChooser(shareIntent, "Share Verse of the Day"))
+                                                        }
+                                                    },
+                                                    modifier = Modifier
+                                                        .size(32.dp)
+                                                        .background(
+                                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                                            shape = CircleShape
+                                                        )
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.Share,
+                                                        contentDescription = "Share Verse of the Day",
+                                                        modifier = Modifier.size(16.dp),
+                                                        tint = MaterialTheme.colorScheme.onBackground
+                                                    )
+                                                }
+                                                // Refresh button
+                                                IconButton(
+                                                    onClick = { viewModel.refreshVerseOfDay() },
+                                                    modifier = Modifier
+                                                        .size(32.dp)
+                                                        .background(
+                                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                                            shape = CircleShape
+                                                        )
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Refresh,
+                                                        contentDescription = "Refresh verse",
+                                                        modifier = Modifier.size(16.dp),
+                                                        tint = MaterialTheme.colorScheme.onBackground
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        
+                                        if (isLoadingVerse) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier
+                                                    .padding(24.dp)
+                                                    .size(24.dp),
+                                                color = MaterialTheme.colorScheme.onBackground
+                                            )
+                                        } else if (verseError != null) {
+                                            Text(
+                                                text = verseError ?: "Error loading verse",
+                                                color = MaterialTheme.colorScheme.error,
+                                                modifier = Modifier.padding(16.dp)
+                                            )
+                                        } else {
+                                            verseOfDay?.let { verse ->
+                                                Spacer(modifier = Modifier.height(16.dp))
+                                                Text(
+                                                    text = verse.text,
+                                                    style = MaterialTheme.typography.bodyLarge,
+                                                    textAlign = TextAlign.Center,
+                                                    modifier = Modifier.padding(horizontal = 8.dp),
+                                                    lineHeight = MaterialTheme.typography.bodyLarge.fontSize * 1.5
+                                                )
+                                                Spacer(modifier = Modifier.height(12.dp))
+                                                Text(
+                                                    text = verse.reference,
+                                                    style = MaterialTheme.typography.labelLarge,
+                                                    color = MaterialTheme.colorScheme.onBackground,
+                                                    fontWeight = FontWeight.Medium,
+                                                    modifier = Modifier
+                                                        .background(
+                                                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                                            shape = MaterialTheme.shapes.small
+                                                        )
+                                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Add divider
+                            Divider(
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                                    .fillMaxWidth(),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                thickness = 1.dp
+                            )
+
+                            // Bible versions list
+                            LazyColumn(
+                                state = scrollState
+                            ) {
+                                items(bibles.filter {
+                                    it.name.contains(searchQuery, ignoreCase = true)
+                                }) { bible ->
+                                    BibleItem(bible) {
+                                        viewModel.setSelectedBible(it)
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
 
-            // Loading indicator
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(50.dp),
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
+                // Loading indicator
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(50.dp),
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                }
 
-            // Error message
-            error?.let {
-                Text(
-                    text = it,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(16.dp)
-                )
+                // Error message
+                error?.let {
+                    Text(
+                        text = it,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(16.dp)
+                    )
+                }
             }
         }
     }
@@ -412,6 +452,12 @@ fun ReadScreen(viewModel: BibleViewModel = viewModel()) {
             onNoteAdded = { title, content ->
                 viewModel.addVerseNote(title, content, selectedVerse!!)
                 showNoteDialog = false
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = "Note successfully added",
+                        duration = SnackbarDuration.Short
+                    )
+                }
             }
         )
     }

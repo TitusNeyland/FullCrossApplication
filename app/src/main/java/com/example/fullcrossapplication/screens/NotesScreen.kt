@@ -11,11 +11,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -24,8 +30,9 @@ import androidx.compose.material.icons.filled.Comment
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -35,7 +42,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
@@ -45,51 +56,43 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fullcrossapplication.data.Comment
+import com.example.fullcrossapplication.data.Discussion
 import com.example.fullcrossapplication.data.Note
 import com.example.fullcrossapplication.data.NoteType
 import com.example.fullcrossapplication.data.NotesTab
-import com.example.fullcrossapplication.data.Discussion
 import com.example.fullcrossapplication.viewmodels.NotesViewModel
+import com.google.firebase.auth.FirebaseAuth
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
-import com.example.fullcrossapplication.data.Comment
-import java.util.UUID
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.union
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import com.google.firebase.auth.FirebaseAuth
-import java.text.SimpleDateFormat
-import java.util.*
-import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.layout.width
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,6 +105,8 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
     var expandedDate by remember { mutableStateOf<LocalDate?>(null) }
     var selectedTab by remember { mutableStateOf(NotesTab.PERSONAL_NOTES) }
     var selectedDiscussionForComment by remember { mutableStateOf<Discussion?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(datesWithNotes) {
         if (datesWithNotes.contains(LocalDate.now()) && expandedDate != LocalDate.now()) {
@@ -110,128 +115,173 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Enhanced Header with Tabs
-        TopAppBar(
-            title = {
-                Column {
-                    Text(
-                        text = when (selectedTab) {
-                            NotesTab.PERSONAL_NOTES -> "Notes"
-                            NotesTab.DISCUSSIONS -> "Discussions"
-                        },
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    Text(
-                        text = when (selectedTab) {
-                            NotesTab.PERSONAL_NOTES -> "${datesWithNotes.size} days of reflection"
-                            NotesTab.DISCUSSIONS -> "Join the conversation"
-                        },
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                }
-            },
-            actions = {
-                IconButton(
-                    onClick = { 
-                        if (selectedTab == NotesTab.PERSONAL_NOTES) {
-                            showAddNoteDialog = true
-                        } else {
-                            showAddDiscussionDialog = true
+    Scaffold(
+        snackbarHost = { 
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(16.dp)
+            ) { data ->
+                Snackbar(
+                    action = {
+                        TextButton(
+                            onClick = { snackbarHostState.currentSnackbarData?.dismiss() }
+                        ) {
+                            Text("Dismiss", color = MaterialTheme.colorScheme.inversePrimary)
                         }
                     },
-                    modifier = Modifier.padding(end = 8.dp)
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = Color.Black
                 ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = if (selectedTab == NotesTab.PERSONAL_NOTES) 
-                            "Add Note" 
-                        else 
-                            "Start Discussion",
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        )
-
-        // Tab Row
-        TabRow(
-            selectedTabIndex = selectedTab.ordinal,
-            modifier = Modifier.fillMaxWidth(),
-            indicator = { tabPositions ->
-                TabRowDefaults.Indicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab.ordinal]),
-                    // Use a subtle green color
-                    color = Color(0xFF4CAF50).copy(alpha = 0.6f)  // Material Green 500 with 60% opacity
-                )
-            }
-        ) {
-            Tab(
-                selected = selectedTab == NotesTab.PERSONAL_NOTES,
-                onClick = { selectedTab = NotesTab.PERSONAL_NOTES },
-                text = { 
-                    Text(
-                        "My Notes",
-                        color = if (selectedTab == NotesTab.PERSONAL_NOTES)
-                            MaterialTheme.colorScheme.onBackground
-                        else
-                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                    ) 
-                }
-            )
-            Tab(
-                selected = selectedTab == NotesTab.DISCUSSIONS,
-                onClick = { selectedTab = NotesTab.DISCUSSIONS },
-                text = { 
-                    Text(
-                        "Discussions",
-                        color = if (selectedTab == NotesTab.DISCUSSIONS)
-                            MaterialTheme.colorScheme.onBackground
-                        else
-                            MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                    ) 
-                }
-            )
-        }
-
-        when (selectedTab) {
-            NotesTab.PERSONAL_NOTES -> {
-                // Existing notes content
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp)
-                ) {
-                    items(datesWithNotes.toList().sortedDescending()) { date ->
-                        DateCard(
-                            date = date,
-                            isExpanded = date == expandedDate,
-                            notes = if (date == expandedDate) notes else emptyList(),
-                            onExpandClick = {
-                                if (expandedDate == date) {
-                                    expandedDate = null
-                                } else {
-                                    expandedDate = date
-                                    viewModel.setSelectedDate(date)
-                                }
-                            },
-                            onDeleteNote = { note ->
-                                viewModel.deleteNote(note)
-                            }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Text(data.visuals.message)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Success",
+                            tint = Color(0xFF4CAF50),
+                            modifier = Modifier.size(24.dp)
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }
-            NotesTab.DISCUSSIONS -> {
-                DiscussionsContent(
-                    viewModel = viewModel,
-                    onDiscussionClick = { /* Handle discussion click */ }
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            // Enhanced Header with Tabs
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = when (selectedTab) {
+                                NotesTab.PERSONAL_NOTES -> "Notes"
+                                NotesTab.DISCUSSIONS -> "Discussions"
+                            },
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                        Text(
+                            text = when (selectedTab) {
+                                NotesTab.PERSONAL_NOTES -> "${datesWithNotes.size} days of reflection"
+                                NotesTab.DISCUSSIONS -> "Join the conversation"
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { 
+                            if (selectedTab == NotesTab.PERSONAL_NOTES) {
+                                showAddNoteDialog = true
+                            } else {
+                                showAddDiscussionDialog = true
+                            }
+                        },
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = if (selectedTab == NotesTab.PERSONAL_NOTES) 
+                                "Add Note" 
+                            else 
+                                "Start Discussion",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
+            )
+
+            // Tab Row
+            TabRow(
+                selectedTabIndex = selectedTab.ordinal,
+                modifier = Modifier.fillMaxWidth(),
+                indicator = { tabPositions ->
+                    TabRowDefaults.Indicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab.ordinal]),
+                        // Use a subtle green color
+                        color = Color(0xFF4CAF50).copy(alpha = 0.6f)  // Material Green 500 with 60% opacity
+                    )
+                }
+            ) {
+                Tab(
+                    selected = selectedTab == NotesTab.PERSONAL_NOTES,
+                    onClick = { selectedTab = NotesTab.PERSONAL_NOTES },
+                    text = { 
+                        Text(
+                            "My Notes",
+                            color = if (selectedTab == NotesTab.PERSONAL_NOTES)
+                                MaterialTheme.colorScheme.onBackground
+                            else
+                                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                        ) 
+                    }
+                )
+                Tab(
+                    selected = selectedTab == NotesTab.DISCUSSIONS,
+                    onClick = { selectedTab = NotesTab.DISCUSSIONS },
+                    text = { 
+                        Text(
+                            "Discussions",
+                            color = if (selectedTab == NotesTab.DISCUSSIONS)
+                                MaterialTheme.colorScheme.onBackground
+                            else
+                                MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                        ) 
+                    }
+                )
+            }
+
+            when (selectedTab) {
+                NotesTab.PERSONAL_NOTES -> {
+                    // Existing notes content
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        items(datesWithNotes.toList().sortedDescending()) { date ->
+                            DateCard(
+                                date = date,
+                                isExpanded = date == expandedDate,
+                                notes = if (date == expandedDate) notes else emptyList(),
+                                onExpandClick = {
+                                    if (expandedDate == date) {
+                                        expandedDate = null
+                                    } else {
+                                        expandedDate = date
+                                        viewModel.setSelectedDate(date)
+                                    }
+                                },
+                                onDeleteNote = { note ->
+                                    viewModel.deleteNote(note)
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            message = "Note deleted",
+                                            duration = SnackbarDuration.Short
+                                        )
+                                    }
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+                NotesTab.DISCUSSIONS -> {
+                    DiscussionsContent(
+                        viewModel = viewModel,
+                        onDiscussionClick = { /* Handle discussion click */ }
+                    )
+                }
             }
         }
     }
@@ -243,6 +293,13 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
                 viewModel.addNote(title, content, verseRef, type)
                 expandedDate = LocalDate.now()
                 showAddNoteDialog = false
+                // Show snackbar using coroutine scope
+                kotlinx.coroutines.MainScope().launch {
+                    snackbarHostState.showSnackbar(
+                        message = "Note successfully added",
+                        duration = SnackbarDuration.Short
+                    )
+                }
             }
         )
     }
@@ -253,6 +310,13 @@ fun NotesScreen(viewModel: NotesViewModel = viewModel()) {
             onDiscussionAdded = { title, content ->
                 viewModel.addDiscussion(title, content)
                 showAddDiscussionDialog = false
+                // Show snackbar for discussion posted
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(
+                        message = "Discussion posted successfully",
+                        duration = SnackbarDuration.Short
+                    )
+                }
             }
         )
     }
