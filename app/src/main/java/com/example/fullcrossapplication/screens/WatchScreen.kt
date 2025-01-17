@@ -115,11 +115,12 @@ data class LiveStream(
 @Composable
 fun WatchScreen(
     notificationsViewModel: NotificationsViewModel = viewModel(),
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
+    watchViewModel: WatchViewModel = viewModel()
 ) {
     var selectedTab by remember { mutableStateOf(WatchScreenTab.WATCH) }
     var showSocialDialog by remember { mutableStateOf(false) }
-    val viewerCount = 128 // Example viewer count
+    val viewerCount by watchViewModel.viewerCount.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val unreadCount by notificationsViewModel.unreadCount.collectAsStateWithLifecycle()
     val contactsViewModel: ContactsViewModel = viewModel(
