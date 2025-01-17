@@ -14,6 +14,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.fullcrossapplication.ui.theme.FullCrossApplicationTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.fullcrossapplication.screens.LoginScreen
+import com.example.fullcrossapplication.screens.MainScreen
+import com.example.fullcrossapplication.screens.SignUpScreen
+import com.example.fullcrossapplication.screens.SplashScreen
 import com.example.fullcrossapplication.viewmodels.AuthViewModel
 import com.example.fullcrossapplication.viewmodels.ThemeViewModel
 import com.google.firebase.FirebaseApp

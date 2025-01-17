@@ -1,11 +1,9 @@
-package com.example.fullcrossapplication.data
+package com.example.fullcrossapplication.repository
 
+import com.example.fullcrossapplication.data.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
@@ -53,7 +51,7 @@ class FirebaseRepository {
             val uid = authResult.user?.uid ?: throw Exception("Failed to get user ID")
             
             val userDoc = usersCollection.document(uid).get().await()
-            val user = userDoc.toObject(User::class.java) 
+            val user = userDoc.toObject(User::class.java)
                 ?: throw Exception("Failed to get user profile")
             
             Result.success(user)

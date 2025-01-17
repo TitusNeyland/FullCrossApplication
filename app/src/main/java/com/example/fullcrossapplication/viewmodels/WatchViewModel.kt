@@ -5,11 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.provider.CalendarContract
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.fullcrossapplication.data.BibleRepository
+import com.example.fullcrossapplication.repository.BibleRepository
 import com.example.fullcrossapplication.data.NoteType
-import com.example.fullcrossapplication.data.VerseOfDay
+import com.example.fullcrossapplication.components.VerseOfDay
 import com.example.fullcrossapplication.screens.LiveStream
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

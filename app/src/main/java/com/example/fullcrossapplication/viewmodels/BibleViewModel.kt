@@ -5,12 +5,12 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fullcrossapplication.data.AppDatabase
 import com.example.fullcrossapplication.data.Bible
-import com.example.fullcrossapplication.data.BibleRepository
+import com.example.fullcrossapplication.repository.BibleRepository
 import com.example.fullcrossapplication.data.Book
 import com.example.fullcrossapplication.data.Chapter
 import com.example.fullcrossapplication.data.Note
 import com.example.fullcrossapplication.data.NoteType
-import com.example.fullcrossapplication.data.VerseOfDay
+import com.example.fullcrossapplication.components.VerseOfDay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch

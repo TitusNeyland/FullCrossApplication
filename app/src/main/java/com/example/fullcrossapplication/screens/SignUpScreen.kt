@@ -1,4 +1,4 @@
-package com.example.fullcrossapplication
+package com.example.fullcrossapplication.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

@@ -1,4 +1,4 @@
-package com.example.fullcrossapplication.data
+package com.example.fullcrossapplication.components
 
 data class VerseOfDay(
     val text: String,

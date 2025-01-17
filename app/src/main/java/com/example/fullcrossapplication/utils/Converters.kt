@@ -1,4 +1,4 @@
-package com.example.fullcrossapplication.data
+package com.example.fullcrossapplication.utils
 
 import androidx.room.TypeConverter
 import java.time.LocalDate

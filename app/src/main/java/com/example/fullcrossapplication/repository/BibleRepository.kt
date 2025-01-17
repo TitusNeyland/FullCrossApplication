@@ -1,5 +1,6 @@
-package com.example.fullcrossapplication.data
+package com.example.fullcrossapplication.repository
 
+import com.example.fullcrossapplication.data.BibleApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
