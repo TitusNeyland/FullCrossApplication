@@ -73,8 +73,8 @@ class WatchViewModel(
         fetchVerseOfDay()
         viewModelScope.launch {
             while(true) {
-                delay(5000) // Update every 5 seconds
-                _viewerCount.value = (100..150).random() // Simulate random viewer count
+                delay(30000) // Update every 30 seconds
+                _viewerCount.value = (15..31).random() // Random viewer count between 15-31
             }
         }
     }
