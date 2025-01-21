@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Comment
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -472,6 +474,195 @@ private fun NoteItem(
     }
 }
 
+@Composable
+private fun CommentItem(
+    comment: Comment,
+    discussionId: String,
+    currentUserId: String = FirebaseAuth.getInstance().currentUser?.uid ?: "",
+    onDeleteComment: (String) -> Unit = {},
+    onReply: (Comment) -> Unit = {}
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showReplies by remember { mutableStateOf(false) }
+    val viewModel: NotesViewModel = viewModel()
+    val replies by remember(discussionId, comment.id) {
+        viewModel.getRepliesForComment(discussionId, comment.id)
+    }.collectAsStateWithLifecycle(initialValue = emptyList())
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .animateContentSize()
+    ) {
+        // Main comment content
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = if (showReplies && replies.isNotEmpty()) 0.dp else 4.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = comment.authorName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = formatTimestamp(comment.timestamp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
+                
+                // Reply button only
+                if (!comment.isReply) {
+                    TextButton(
+                        onClick = { onReply(comment) },
+                        contentPadding = PaddingValues(horizontal = 8.dp)
+                    ) {
+                        Text(
+                            "Reply",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+            }
+
+            // Show who the comment is replying to if it's a reply
+            if (comment.replyToAuthorName != null) {
+                Text(
+                    text = "Replying to ${comment.replyToAuthorName}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
+            Text(
+                text = comment.content,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+
+            // Bottom row with replies toggle and delete button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    // Show replies count and toggle button if there are replies
+                    if (comment.replyCount > 0 && !comment.isReply) {
+                        TextButton(
+                            onClick = { showReplies = !showReplies },
+                            contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp)
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (showReplies) "Hide replies" else "Show ${comment.replyCount} replies",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                )
+                                Icon(
+                                    imageVector = if (showReplies) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                    contentDescription = if (showReplies) "Hide replies" else "Show replies",
+                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                // Delete button for comment author
+                if (comment.authorId == currentUserId) {
+                    IconButton(
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier.size(24.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete comment",
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // Show replies if expanded
+        androidx.compose.animation.AnimatedVisibility(
+            visible = showReplies && replies.isNotEmpty(),
+            enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, top = 8.dp)
+            ) {
+                replies.forEach { reply ->
+                    CommentItem(
+                        comment = reply,
+                        discussionId = discussionId,
+                        currentUserId = currentUserId,
+                        onDeleteComment = onDeleteComment,
+                        onReply = onReply
+                    )
+                    if (reply != replies.last()) {
+                        Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    }
+                }
+            }
+        }
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Comment") },
+            text = { Text("Are you sure you want to delete this comment?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteComment(comment.id)
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text(
+                        "Delete",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel",
+                              color = MaterialTheme.colorScheme.onBackground)
+                }
+            }
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddNoteDialog(
@@ -817,6 +1008,7 @@ private fun FullDiscussionSheet(
     val currentUserName by viewModel.currentUserName.collectAsStateWithLifecycle()
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var replyingTo by remember { mutableStateOf<Comment?>(null) }
     
     // Get the latest version of the discussion from the discussions list
     val discussions by viewModel.discussions.collectAsStateWithLifecycle()
@@ -947,60 +1139,105 @@ private fun FullDiscussionSheet(
                     .weight(1f)
                     .fillMaxWidth()
             ) {
-                items(updatedDiscussion.comments) { comment ->
+                items(updatedDiscussion.comments.filter { !it.isReply }) { comment ->
                     CommentItem(
                         comment = comment,
+                        discussionId = updatedDiscussion.id,
                         currentUserId = currentUserId,
                         onDeleteComment = { commentId ->
                             viewModel.deleteComment(updatedDiscussion.id, commentId)
-                        }
+                        },
+                        onReply = { replyingTo = it }
                     )
                     Divider(modifier = Modifier.padding(vertical = 8.dp))
                 }
             }
 
-            // Comment input
-            Row(
+            // Comment input with reply indicator
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(top = 8.dp)
             ) {
-                OutlinedTextField(
-                    value = newCommentText,
-                    onValueChange = { newCommentText = it },
-                    label = { Text("Add a comment", color = MaterialTheme.colorScheme.onBackground) },
-                    modifier = Modifier.weight(1f),
-                    maxLines = 3,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.onBackground,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                        cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                        focusedLabelColor = MaterialTheme.colorScheme.onBackground,
-                        unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                    ),
-                    trailingIcon = {
+                // Show who we're replying to
+                if (replyingTo != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Replying to ${replyingTo?.authorName}",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                         IconButton(
-                            onClick = {
-                                if (newCommentText.isNotBlank()) {
-                                    onCommentAdded(newCommentText)
-                                    newCommentText = ""
-                                }
-                            },
-                            enabled = newCommentText.isNotBlank()
+                            onClick = { replyingTo = null },
+                            modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
-                                Icons.Default.Send,
-                                contentDescription = "Send comment",
-                                tint = if (newCommentText.isNotBlank()) 
-                                    MaterialTheme.colorScheme.onBackground 
-                                else 
-                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                Icons.Default.Close,
+                                contentDescription = "Cancel reply",
+                                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
-                )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = newCommentText,
+                        onValueChange = { newCommentText = it },
+                        label = { 
+                            Text(
+                                if (replyingTo != null) "Write a reply..." else "Add a comment",
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                        maxLines = 3,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.onBackground,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                            cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                            focusedLabelColor = MaterialTheme.colorScheme.onBackground,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
+                        ),
+                        trailingIcon = {
+                            IconButton(
+                                onClick = {
+                                    if (newCommentText.isNotBlank()) {
+                                        viewModel.addComment(
+                                            discussionId = updatedDiscussion.id,
+                                            content = newCommentText,
+                                            parentCommentId = replyingTo?.id,
+                                            replyToAuthorName = replyingTo?.authorName
+                                        )
+                                        newCommentText = ""
+                                        replyingTo = null
+                                    }
+                                },
+                                enabled = newCommentText.isNotBlank()
+                            ) {
+                                Icon(
+                                    Icons.Default.Send,
+                                    contentDescription = "Send comment",
+                                    tint = if (newCommentText.isNotBlank()) 
+                                        MaterialTheme.colorScheme.onBackground 
+                                    else 
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                                )
+                            }
+                        }
+                    )
+                }
             }
         }
     }
@@ -1031,104 +1268,6 @@ private fun FullDiscussionSheet(
                 }
             }
         )
-    }
-}
-
-@Composable
-private fun CommentItem(
-    comment: Comment,
-    currentUserId: String = FirebaseAuth.getInstance().currentUser?.uid ?: "",
-    onDeleteComment: (String) -> Unit = {}
-) {
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = comment.authorName,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = formatTimestamp(comment.timestamp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-            }
-            
-            // Show delete button only for the comment author
-            if (comment.authorId == currentUserId) {
-                IconButton(
-                    onClick = { showDeleteDialog = true },
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete comment",
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        }
-        Text(
-            text = comment.content,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-    }
-
-    // Delete confirmation dialog
-    if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Comment") },
-            text = { Text("Are you sure you want to delete this comment?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onDeleteComment(comment.id)
-                        showDeleteDialog = false
-                    }
-                ) {
-                    Text(
-                        "Delete",
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel",
-                              color = MaterialTheme.colorScheme.onBackground)
-                }
-            }
-        )
-    }
-}
-
-private fun formatTimestamp(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
-
-    return when {
-        diff < 60000 -> "Just now"
-        diff < 3600000 -> "${diff / 60000} minutes ago"
-        diff < 86400000 -> "${diff / 3600000} hours ago"
-        else -> SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
-            .format(Date(timestamp))
     }
 }
 
@@ -1212,4 +1351,17 @@ private fun AddDiscussionDialog(
             }
         }
     )
+}
+
+private fun formatTimestamp(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val diff = now - timestamp
+
+    return when {
+        diff < 60000 -> "Just now"
+        diff < 3600000 -> "${diff / 60000} minutes ago"
+        diff < 86400000 -> "${diff / 3600000} hours ago"
+        else -> SimpleDateFormat("MMM d, yyyy", Locale.getDefault())
+            .format(Date(timestamp))
+    }
 } 

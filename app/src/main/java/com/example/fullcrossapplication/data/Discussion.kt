@@ -21,5 +21,9 @@ data class Comment(
     val authorId: String = "",
     val authorName: String = "",
     val timestamp: Long = System.currentTimeMillis(),
-    val likes: Int = 0
+    val likes: Int = 0,
+    val parentCommentId: String? = null,
+    val replyToAuthorName: String? = null,
+    val replyCount: Int = 0,
+    val isReply: Boolean = false
 ) 
