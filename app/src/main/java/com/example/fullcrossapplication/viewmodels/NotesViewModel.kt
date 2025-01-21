@@ -414,19 +414,54 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteComment(discussionId: String, commentId: String) {
         viewModelScope.launch {
             try {
-                // Delete the comment
-                firestore.collection("discussions")
+                // Get the comment to check if it's a reply and get its parent comment ID
+                val commentDoc = firestore.collection("discussions")
                     .document(discussionId)
                     .collection("comments")
                     .document(commentId)
-                    .delete()
+                    .get()
                     .await()
 
-                // Decrement the comment count
-                firestore.collection("discussions")
-                    .document(discussionId)
-                    .update("commentCount", FieldValue.increment(-1))
-                    .await()
+                val isReply = commentDoc.getBoolean("isReply") ?: false
+                val parentCommentId = commentDoc.getString("parentCommentId")
+                val replyCount = commentDoc.getLong("replyCount")?.toInt() ?: 0
+
+                // Start a batch write
+                val batch = firestore.batch()
+                val discussionRef = firestore.collection("discussions").document(discussionId)
+                val commentRef = discussionRef.collection("comments").document(commentId)
+
+                // If this is a parent comment with replies, delete all replies first
+                if (!isReply && replyCount > 0) {
+                    // Get all replies to this comment
+                    val replies = discussionRef.collection("comments")
+                        .whereEqualTo("parentCommentId", commentId)
+                        .get()
+                        .await()
+
+                    // Add all reply deletions to the batch
+                    replies.documents.forEach { replyDoc ->
+                        batch.delete(replyDoc.reference)
+                    }
+
+                    // Update discussion comment count to account for deleted replies
+                    batch.update(discussionRef, "commentCount", FieldValue.increment(-(replies.size() + 1).toLong()))
+                } else if (isReply && parentCommentId != null) {
+                    // If this is a reply, update the parent comment's reply count
+                    val parentCommentRef = discussionRef.collection("comments").document(parentCommentId)
+                    batch.update(parentCommentRef, "replyCount", FieldValue.increment(-1L))
+                    // Update discussion comment count for the single reply
+                    batch.update(discussionRef, "commentCount", FieldValue.increment(-1L))
+                } else {
+                    // For a regular comment with no replies
+                    batch.update(discussionRef, "commentCount", FieldValue.increment(-1L))
+                }
+
+                // Delete the comment itself
+                batch.delete(commentRef)
+
+                // Commit all the changes
+                batch.commit().await()
 
             } catch (e: Exception) {
                 // Handle error
