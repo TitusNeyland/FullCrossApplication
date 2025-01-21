@@ -41,10 +41,35 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
     val currentUserName = _currentUserName.asStateFlow()
 
     init {
+        // Listen for auth state changes
+        auth.addAuthStateListener { firebaseAuth ->
+            if (firebaseAuth.currentUser != null) {
+                refreshAllData()
+            } else {
+                // Clear all data when user logs out
+                clearAllData()
+            }
+        }
+    }
+
+    private fun clearAllData() {
+        viewModelScope.launch {
+            _notes.value = emptyList()
+            _datesWithNotes.value = emptySet()
+            _currentUserName.value = null
+            _selectedDate.value = LocalDate.now()
+        }
+    }
+
+    private fun refreshAllData() {
         loadNotesForDate(LocalDate.now())
         loadDatesWithNotes()
         loadDiscussions()
         loadCurrentUserName()
+    }
+
+    private fun getCurrentUserId(): String {
+        return auth.currentUser?.uid ?: throw IllegalStateException("User not logged in")
     }
 
     private fun loadCurrentUserName() {
@@ -69,36 +94,61 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun loadNotesForDate(date: LocalDate) {
         viewModelScope.launch {
-            noteDao.getNotesForDate(date).collect {
-                _notes.value = it
+            try {
+                val userId = getCurrentUserId()
+                noteDao.getNotesForDate(date, userId).collect {
+                    _notes.value = it
+                }
+            } catch (e: IllegalStateException) {
+                // Handle not logged in state
+                _notes.value = emptyList()
             }
         }
     }
 
     fun addNote(title: String, content: String, verseReference: String?, type: NoteType) {
         viewModelScope.launch {
-            val note = Note(
-                date = LocalDate.now(),
-                title = title,
-                content = content,
-                verseReference = verseReference,
-                type = type
-            )
-            noteDao.insertNote(note)
-            setSelectedDate(LocalDate.now())
+            try {
+                val userId = getCurrentUserId()
+                val note = Note(
+                    date = LocalDate.now(),
+                    title = title,
+                    content = content,
+                    verseReference = verseReference,
+                    type = type,
+                    userId = userId
+                )
+                noteDao.insertNote(note)
+                setSelectedDate(LocalDate.now())
+            } catch (e: IllegalStateException) {
+                // Handle not logged in state
+            }
         }
     }
 
     fun deleteNote(note: Note) {
         viewModelScope.launch {
-            noteDao.deleteNote(note)
+            try {
+                val userId = getCurrentUserId()
+                if (note.userId == userId) {
+                    noteDao.deleteNote(note)
+                }
+            } catch (e: IllegalStateException) {
+                // Handle not logged in state
+            }
         }
     }
 
     private fun loadDatesWithNotes() {
         viewModelScope.launch {
-            noteDao.getDatesWithNotes().collect { dates ->
-                _datesWithNotes.value = dates.toSet()
+            try {
+                val userId = getCurrentUserId()
+                noteDao.getDatesWithNotes(userId).collect { dates ->
+                    _datesWithNotes.value = dates.toSet()
+                }
+            } catch (e: IllegalStateException) {
+                // Handle not logged in state
+                _datesWithNotes.value = emptySet()
             }
         }
     }
