@@ -208,8 +208,8 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
                                         return@addSnapshotListener
                                     }
 
-                                    val comments = commentsSnapshot?.documents?.map { commentDoc ->
-                                        Comment(
+                                    val comments = commentsSnapshot?.documents?.mapNotNull { commentDoc ->
+                                        val comment = Comment(
                                             id = commentDoc.id,
                                             discussionId = doc.id,
                                             content = commentDoc.getString("content") ?: "",
@@ -222,13 +222,25 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
                                             replyCount = commentDoc.getLong("replyCount")?.toInt() ?: 0,
                                             isReply = commentDoc.getBoolean("isReply") ?: false
                                         )
+                                        comment
                                     } ?: emptyList()
+
+                                    // Group comments by parent ID to organize replies
+                                    val commentMap = comments.groupBy { it.parentCommentId }
+                                    
+                                    // Get top-level comments (no parent)
+                                    val topLevelComments = commentMap[null] ?: emptyList()
+                                    
+                                    // Create a list with all comments in the correct order
+                                    val orderedComments = topLevelComments.flatMap { parentComment ->
+                                        listOf(parentComment) + (commentMap[parentComment.id] ?: emptyList())
+                                    }
 
                                     // Find the current discussion in the list and update its comments
                                     val currentDiscussions = _discussions.value
                                     val updatedDiscussions = currentDiscussions.map { existingDiscussion ->
                                         if (existingDiscussion.id == doc.id) {
-                                            existingDiscussion.copy(comments = comments)
+                                            existingDiscussion.copy(comments = orderedComments)
                                         } else {
                                             existingDiscussion
                                         }
@@ -368,47 +380,6 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
                 // Handle error
             }
         }
-    }
-
-    fun getRepliesForComment(discussionId: String, commentId: String): StateFlow<List<Comment>> {
-        val repliesFlow = MutableStateFlow<List<Comment>>(emptyList())
-        
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                firestore.collection("discussions")
-                    .document(discussionId)
-                    .collection("comments")
-                    .whereEqualTo("parentCommentId", commentId)
-                    .orderBy("timestamp")
-                    .addSnapshotListener { snapshot, e ->
-                        if (e != null) {
-                            return@addSnapshotListener
-                        }
-
-                        val replies = snapshot?.documents?.map { doc ->
-                            Comment(
-                                id = doc.id,
-                                discussionId = discussionId,
-                                content = doc.getString("content") ?: "",
-                                authorId = doc.getString("authorId") ?: "",
-                                authorName = doc.getString("authorName") ?: "",
-                                timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis(),
-                                likes = doc.getLong("likes")?.toInt() ?: 0,
-                                parentCommentId = doc.getString("parentCommentId"),
-                                replyToAuthorName = doc.getString("replyToAuthorName"),
-                                replyCount = doc.getLong("replyCount")?.toInt() ?: 0,
-                                isReply = true
-                            )
-                        } ?: emptyList()
-
-                        repliesFlow.value = replies
-                    }
-            } catch (e: Exception) {
-                repliesFlow.value = emptyList()
-            }
-        }
-
-        return repliesFlow.asStateFlow()
     }
 
     fun deleteComment(discussionId: String, commentId: String) {

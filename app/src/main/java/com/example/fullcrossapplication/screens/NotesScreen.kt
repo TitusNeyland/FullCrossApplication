@@ -485,9 +485,6 @@ private fun CommentItem(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showReplies by remember { mutableStateOf(false) }
     val viewModel: NotesViewModel = viewModel()
-    val replies by remember(discussionId, comment.id) {
-        viewModel.getRepliesForComment(discussionId, comment.id)
-    }.collectAsStateWithLifecycle(initialValue = emptyList())
 
     Column(
         modifier = Modifier
@@ -499,7 +496,7 @@ private fun CommentItem(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = if (showReplies && replies.isNotEmpty()) 0.dp else 4.dp)
+                .padding(bottom = if (showReplies && comment.replyCount > 0) 0.dp else 4.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -609,7 +606,7 @@ private fun CommentItem(
 
         // Show replies if expanded
         androidx.compose.animation.AnimatedVisibility(
-            visible = showReplies && replies.isNotEmpty(),
+            visible = showReplies && comment.replyCount > 0,
             enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
             exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut()
         ) {
@@ -618,6 +615,10 @@ private fun CommentItem(
                     .fillMaxWidth()
                     .padding(start = 16.dp, top = 8.dp)
             ) {
+                // Get replies from the discussion's comments list
+                val discussion = viewModel.discussions.value.find { it.id == discussionId }
+                val replies = discussion?.comments?.filter { it.parentCommentId == comment.id } ?: emptyList()
+                
                 replies.forEach { reply ->
                     CommentItem(
                         comment = reply,
