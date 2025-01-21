@@ -352,4 +352,38 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    fun deleteDiscussion(discussionId: String) {
+        viewModelScope.launch {
+            try {
+                val currentUserId = auth.currentUser?.uid ?: return@launch
+                
+                // Get the discussion to verify ownership
+                val discussion = firestore.collection("discussions")
+                    .document(discussionId)
+                    .get()
+                    .await()
+
+                // Only allow deletion if the current user is the author
+                if (discussion.getString("authorId") == currentUserId) {
+                    // Delete all comments first
+                    val comments = firestore.collection("discussions")
+                        .document(discussionId)
+                        .collection("comments")
+                        .get()
+                        .await()
+
+                    // Batch delete all comments
+                    val batch = firestore.batch()
+                    comments.documents.forEach { comment ->
+                        batch.delete(comment.reference)
+                    }
+                    batch.delete(discussion.reference)
+                    batch.commit().await()
+                }
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
 } 

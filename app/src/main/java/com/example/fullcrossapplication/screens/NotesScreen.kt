@@ -672,6 +672,10 @@ private fun DiscussionCard(
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit
 ) {
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    val viewModel: NotesViewModel = viewModel()
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -683,11 +687,31 @@ private fun DiscussionCard(
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Text(
-                text = discussion.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = discussion.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                // Show delete button only for the discussion author
+                if (discussion.authorId == currentUserId) {
+                    IconButton(
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete discussion",
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+            }
             Text(
                 text = discussion.content,
                 style = MaterialTheme.typography.bodyMedium,
@@ -751,6 +775,33 @@ private fun DiscussionCard(
             }
         }
     }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Discussion") },
+            text = { Text("Are you sure you want to delete this discussion? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteDiscussion(discussion.id)
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text(
+                        "Delete",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel",
+                              color = MaterialTheme.colorScheme.onBackground)
+                }
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -765,6 +816,7 @@ private fun FullDiscussionSheet(
     val viewModel: NotesViewModel = viewModel()
     val currentUserName by viewModel.currentUserName.collectAsStateWithLifecycle()
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    var showDeleteDialog by remember { mutableStateOf(false) }
     
     // Get the latest version of the discussion from the discussions list
     val discussions by viewModel.discussions.collectAsStateWithLifecycle()
@@ -785,85 +837,99 @@ private fun FullDiscussionSheet(
                 .padding(bottom = 16.dp)
                 .navigationBarsPadding()
         ) {
-            // Discussion Header
-            Column(
+            // Discussion Header with Delete Option
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                    .padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = updatedDiscussion.title,
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
                 )
-                
+                if (updatedDiscussion.authorId == currentUserId) {
+                    IconButton(
+                        onClick = { showDeleteDialog = true }
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete discussion",
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+            }
+            
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "By ${updatedDiscussion.authorName}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+                Text(
+                    text = formatTimestamp(updatedDiscussion.timestamp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
+
+            Text(
+                text = updatedDiscussion.content,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+
+            // Like button and comment count
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.clickable {
+                        viewModel.likeDiscussion(updatedDiscussion.id)
+                    }
                 ) {
-                    Text(
-                        text = "By ${updatedDiscussion.authorName}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    Icon(
+                        Icons.Default.ThumbUp,
+                        contentDescription = "Like",
+                        modifier = Modifier.size(16.dp),
+                        tint = if (currentUserId in updatedDiscussion.likedByUsers)
+                            MaterialTheme.colorScheme.onBackground
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                     Text(
-                        text = formatTimestamp(updatedDiscussion.timestamp),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                        text = "${updatedDiscussion.likes}",
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
-
-                Text(
-                    text = updatedDiscussion.content,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-
-                // Like button and comment count
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.clickable {
-                            viewModel.likeDiscussion(updatedDiscussion.id)
-                        }
-                    ) {
-                        Icon(
-                            Icons.Default.ThumbUp,
-                            contentDescription = "Like",
-                            modifier = Modifier.size(16.dp),
-                            tint = if (currentUserId in updatedDiscussion.likedByUsers)
-                                MaterialTheme.colorScheme.onBackground
-                            else
-                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        )
-                        Text(
-                            text = "${updatedDiscussion.likes}",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Comment,
-                            contentDescription = "Comments",
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = "${updatedDiscussion.comments.size}",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
+                    Icon(
+                        Icons.Default.Comment,
+                        contentDescription = "Comments",
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "${updatedDiscussion.comments.size}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             }
 
@@ -937,6 +1003,34 @@ private fun FullDiscussionSheet(
                 )
             }
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete Discussion") },
+            text = { Text("Are you sure you want to delete this discussion? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteDiscussion(discussion.id)
+                        showDeleteDialog = false
+                        onDismiss()
+                    }
+                ) {
+                    Text(
+                        "Delete",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel",
+                              color = MaterialTheme.colorScheme.onBackground)
+                }
+            }
+        )
     }
 }
 
