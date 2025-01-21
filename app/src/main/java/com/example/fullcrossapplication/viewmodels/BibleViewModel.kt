@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import org.jsoup.Jsoup
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import com.google.firebase.auth.FirebaseAuth
 
 class BibleViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = BibleRepository()
@@ -179,12 +180,14 @@ class BibleViewModel(application: Application) : AndroidViewModel(application) {
 
     fun addVerseNote(title: String, content: String, verseReference: String) {
         viewModelScope.launch {
+            val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
             val note = Note(
                 date = LocalDate.now(),
                 title = title,
                 content = content,
                 verseReference = verseReference,
-                type = NoteType.VERSE
+                type = NoteType.VERSE,
+                userId = userId
             )
             noteDao.insertNote(note)
             _selectedVerse.value = null // Reset selected verse after adding note

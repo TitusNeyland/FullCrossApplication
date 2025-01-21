@@ -12,7 +12,8 @@ data class Note(
     val title: String,
     val content: String,
     val verseReference: String? = null,
-    val type: NoteType
+    val type: NoteType,
+    val userId: String
 )
 
 enum class NoteType {
