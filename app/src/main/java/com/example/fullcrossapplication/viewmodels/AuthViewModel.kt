@@ -41,12 +41,12 @@ class AuthViewModel(
         }
     }
 
-    fun signUp(firstName: String, lastName: String, email: String, password: String) {
+    fun signUp(firstName: String, lastName: String, email: String, password: String, roles: List<String> = emptyList()) {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
             
-            repository.signUp(firstName, lastName, email, password)
+            repository.signUp(firstName, lastName, email, password, roles = roles)
                 .onSuccess { user ->
                     _currentUser.value = user
                 }

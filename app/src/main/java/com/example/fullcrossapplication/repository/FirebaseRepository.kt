@@ -18,7 +18,8 @@ class FirebaseRepository {
         password: String, 
         firstName: String, 
         lastName: String,
-        phoneNumber: String = ""
+        phoneNumber: String = "",
+        roles: List<String> = emptyList()
     ): Result<User> {
         return try {
             println("Email passed to Firebase: '${email.trim()}'")
@@ -30,7 +31,8 @@ class FirebaseRepository {
                 email = email,
                 firstName = firstName,
                 lastName = lastName,
-                phoneNumber = phoneNumber
+                phoneNumber = phoneNumber,
+                roles = roles
             )
             
             try {
