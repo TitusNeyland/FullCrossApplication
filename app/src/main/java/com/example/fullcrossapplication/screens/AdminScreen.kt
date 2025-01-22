@@ -5,9 +5,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fullcrossapplication.viewmodels.AdminViewModel
@@ -69,6 +71,11 @@ fun AdminScreen(
                             onValueChange = { streamUrl = it },
                             label = { Text("Stream URL") },
                             modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.Black,
+                                focusedLabelColor = Color.Black,
+                                cursorColor = Color.Black
+                            ),
                             supportingText = {
                                 streamSettings?.let { settings ->
                                     val dateFormat = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
@@ -87,7 +94,10 @@ fun AdminScreen(
                                 adminViewModel.updateStreamUrl(streamUrl)
                                 showSuccessMessage = true
                             },
-                            modifier = Modifier.align(Alignment.End)
+                            modifier = Modifier.align(Alignment.End),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Black
+                            )
                         ) {
                             Icon(
                                 Icons.Default.Save,
