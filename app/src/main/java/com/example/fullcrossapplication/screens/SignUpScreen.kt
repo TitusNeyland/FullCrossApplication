@@ -165,7 +165,7 @@ fun SignUpScreen(
                 if (validateInputs(firstName, lastName, email, password, confirmPassword)) {
                     authViewModel.signUp(email, password, firstName, lastName)
                 } else {
-                    authViewModel.setError("Please check your input and try again")
+                    authViewModel.setError(getValidationError(firstName, lastName, email, password, confirmPassword))
                 }
             },
             modifier = Modifier.fillMaxWidth(),
@@ -213,9 +213,32 @@ private fun validateInputs(
     return when {
         firstName.isBlank() -> false
         lastName.isBlank() -> false
+        firstName.contains(Regex("\\s")) -> false
+        lastName.contains(Regex("\\s")) -> false
+        email.contains(Regex("\\s")) -> false
         !email.matches(emailPattern.toRegex()) -> false
         !PasswordValidator.validatePassword(password) -> false
         password != confirmPassword -> false
         else -> true
+    }
+}
+
+private fun getValidationError(
+    firstName: String,
+    lastName: String,
+    email: String,
+    password: String,
+    confirmPassword: String
+): String? {
+    return when {
+        firstName.isBlank() -> "First name cannot be empty"
+        lastName.isBlank() -> "Last name cannot be empty"
+        firstName.contains(Regex("\\s")) -> "First name cannot contain spaces"
+        lastName.contains(Regex("\\s")) -> "Last name cannot contain spaces"
+        email.contains(Regex("\\s")) -> "Email cannot contain spaces"
+        !email.matches("[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+".toRegex()) -> "Please enter a valid email address"
+        !PasswordValidator.validatePassword(password) -> PasswordValidator.getPasswordRequirementsMessage()
+        password != confirmPassword -> "Passwords do not match"
+        else -> null
     }
 } 

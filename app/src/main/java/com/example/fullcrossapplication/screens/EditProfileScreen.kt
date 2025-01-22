@@ -139,7 +139,8 @@ fun EditProfileScreen(
 
             Button(
                 onClick = {
-                    if (firstName.isNotBlank() && lastName.isNotBlank() && phoneNumber.isNotBlank() && email.isNotBlank()) {
+                    val validationError = validateInputs(firstName, lastName, phoneNumber, email)
+                    if (validationError == null) {
                         authViewModel.updateProfile(
                             firstName,
                             lastName,
@@ -151,7 +152,7 @@ fun EditProfileScreen(
                             }
                         }
                     } else {
-                        authViewModel.setError("Please fill in all required fields")
+                        authViewModel.setError(validationError)
                     }
                 },
                 modifier = Modifier
@@ -203,7 +204,18 @@ fun EditProfileScreen(
 
 private fun validateInputs(
     firstName: String,
-    lastName: String
-): Boolean {
-    return firstName.isNotBlank() && lastName.isNotBlank()
+    lastName: String,
+    phoneNumber: String,
+    email: String
+): String? {
+    return when {
+        firstName.isBlank() -> "First name cannot be empty"
+        lastName.isBlank() -> "Last name cannot be empty"
+        firstName.contains(Regex("\\s")) -> "First name cannot contain spaces"
+        lastName.contains(Regex("\\s")) -> "Last name cannot contain spaces"
+        email.contains(Regex("\\s")) -> "Email cannot contain spaces"
+        !email.matches("[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+".toRegex()) -> "Please enter a valid email address"
+        phoneNumber.isBlank() -> "Phone number cannot be empty"
+        else -> null
+    }
 } 
