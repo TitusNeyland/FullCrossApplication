@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.fullcrossapplication.viewmodels.AuthViewModel
+import com.example.fullcrossapplication.utils.PasswordValidator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -121,7 +122,13 @@ fun SignUpScreen(
                 cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                 focusedLabelColor = MaterialTheme.colorScheme.onBackground,
                 unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-            )
+            ),
+            supportingText = {
+                Text(
+                    text = PasswordValidator.getPasswordRequirementsMessage(),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         )
 
         // Confirm Password
@@ -155,9 +162,10 @@ fun SignUpScreen(
         // Sign Up Button
         Button(
             onClick = {
-                if (firstName.isNotBlank() && lastName.isNotBlank() && 
-                    email.isNotBlank() && password.isNotBlank()) {
+                if (validateInputs(firstName, lastName, email, password, confirmPassword)) {
                     authViewModel.signUp(email, password, firstName, lastName)
+                } else {
+                    authViewModel.setError("Please check your input and try again")
                 }
             },
             modifier = Modifier.fillMaxWidth(),
@@ -206,7 +214,7 @@ private fun validateInputs(
         firstName.isBlank() -> false
         lastName.isBlank() -> false
         !email.matches(emailPattern.toRegex()) -> false
-        password.length < 6 -> false
+        !PasswordValidator.validatePassword(password) -> false
         password != confirmPassword -> false
         else -> true
     }
