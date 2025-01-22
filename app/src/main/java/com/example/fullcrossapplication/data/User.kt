@@ -9,5 +9,6 @@ data class User(
     val firstName: String = "",
     val lastName: String = "",
     val phoneNumber: String = "",
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val roles: List<String> = emptyList()
 ) 

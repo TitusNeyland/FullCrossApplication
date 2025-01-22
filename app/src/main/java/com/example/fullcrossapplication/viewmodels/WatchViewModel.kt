@@ -10,10 +10,14 @@ import com.example.fullcrossapplication.repository.BibleRepository
 import com.example.fullcrossapplication.data.NoteType
 import com.example.fullcrossapplication.components.VerseOfDay
 import com.example.fullcrossapplication.screens.LiveStream
+import com.example.fullcrossapplication.data.StreamSettings
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import org.jsoup.Jsoup
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -39,7 +43,7 @@ class WatchViewModel(
     val error = _error.asStateFlow()
 
     private val _viewerCount = MutableStateFlow(0)
-    val viewerCount = _viewerCount.asStateFlow()
+    val viewerCount: StateFlow<Int> = _viewerCount.asStateFlow()
 
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val chatMessages = _chatMessages.asStateFlow()
@@ -53,6 +57,11 @@ class WatchViewModel(
     private val notesViewModel = NotesViewModel(getApplication())
 
     val notes = notesViewModel.notes
+
+    private val firestore = FirebaseFirestore.getInstance()
+    
+    private val _streamSettings = MutableStateFlow<StreamSettings?>(null)
+    val streamSettings: StateFlow<StreamSettings?> = _streamSettings.asStateFlow()
 
     // List of inspiring Bible verses
     private val verseIds = listOf(
@@ -76,6 +85,7 @@ class WatchViewModel(
                 _viewerCount.value = (15..31).random() // Random viewer count between 15-31
             }
         }
+        loadStreamSettings()
     }
 
     private fun fetchVerseOfDay() {
@@ -203,6 +213,21 @@ class WatchViewModel(
         }
         
         context.startActivity(intent)
+    }
+
+    private fun loadStreamSettings() {
+        viewModelScope.launch {
+            try {
+                val snapshot = firestore.collection("settings")
+                    .document("stream")
+                    .get()
+                    .await()
+
+                _streamSettings.value = snapshot.toObject(StreamSettings::class.java)
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
     }
 }
 

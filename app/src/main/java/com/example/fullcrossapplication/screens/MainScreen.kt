@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MonetizationOn
@@ -21,18 +22,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fullcrossapplication.viewmodels.AuthViewModel
 
 enum class BottomNavItem(val title: String, val icon: ImageVector) {
     Read("Read", Icons.Default.Book),
     Notes("Notes", Icons.Default.Edit),
     Watch("Watch", Icons.Default.PlayCircle),
     Donate("Donate", Icons.Default.MonetizationOn),
-    Account("Account", Icons.Default.AccountCircle)
+    Account("Account", Icons.Default.AccountCircle),
+    Admin("Admin", Icons.Default.AdminPanelSettings)
 }
 
 @Composable
 fun MainScreen(
-    onSignOut: () -> Unit = {}
+    onSignOut: () -> Unit = {},
+    authViewModel: AuthViewModel = viewModel()
 ) {
     var selectedItem by remember { mutableStateOf(BottomNavItem.Watch) }
     var showLoginScreen by remember { mutableStateOf(false) }
@@ -41,6 +47,9 @@ fun MainScreen(
     var showChangePassword by remember { mutableStateOf(false) }
     var showEditProfile by remember { mutableStateOf(false) }
     var showFriendsList by remember { mutableStateOf(false) }
+    
+    val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
+    val isAdmin = currentUser?.roles?.contains("admin") ?: false
 
     if (showLoginScreen) {
         LoginScreen(
@@ -88,7 +97,13 @@ fun MainScreen(
     Scaffold(
         bottomBar = {
             NavigationBar {
-                BottomNavItem.values().forEach { item ->
+                val items = if (isAdmin) {
+                    BottomNavItem.values().toList()
+                } else {
+                    BottomNavItem.values().filter { it != BottomNavItem.Admin }
+                }
+                
+                items.forEach { item ->
                     NavigationBarItem(
                         icon = { Icon(item.icon, contentDescription = item.title) },
                         label = { Text(item.title) },
@@ -117,6 +132,7 @@ fun MainScreen(
                     onNavigateToEditProfile = { showEditProfile = true },
                     onNavigateToFriends = { showFriendsList = true }
                 )
+                BottomNavItem.Admin -> AdminScreen()
             }
         }
     }
