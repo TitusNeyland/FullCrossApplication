@@ -286,6 +286,8 @@ fun WatchScreen(
 @Composable
 private fun FeaturedStreamCard(stream: LiveStream) {
     val context = LocalContext.current
+    val watchViewModel: WatchViewModel = viewModel()
+    val streamSettings by watchViewModel.streamSettings.collectAsStateWithLifecycle()
     
     Card(
         modifier = Modifier
@@ -388,12 +390,13 @@ private fun FeaturedStreamCard(stream: LiveStream) {
             Button(
                 onClick = {
                     try {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(stream.facebookUrl))
+                        val streamUrl = streamSettings?.streamUrl ?: stream.facebookUrl
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(streamUrl))
                         context.startActivity(intent)
                     } catch (e: Exception) {
                         Toast.makeText(
                             context,
-                            "Unable to open Facebook",
+                            "Unable to open stream",
                             Toast.LENGTH_SHORT
                         ).show()
                     }

@@ -2,18 +2,37 @@ package com.example.fullcrossapplication.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.fullcrossapplication.viewmodels.AdminViewModel
 import com.example.fullcrossapplication.viewmodels.AuthViewModel
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminScreen(
-    authViewModel: AuthViewModel = viewModel()
+    authViewModel: AuthViewModel = viewModel(),
+    adminViewModel: AdminViewModel = viewModel()
 ) {
+    val streamSettings by adminViewModel.streamSettings.collectAsState()
+    var streamUrl by remember { mutableStateOf("") }
+    var showSuccessMessage by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        adminViewModel.loadStreamSettings()
+    }
+    
+    LaunchedEffect(streamSettings) {
+        streamUrl = streamSettings?.streamUrl ?: ""
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -29,8 +48,9 @@ fun AdminScreen(
         // Content
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Stream Settings Card
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth()
@@ -39,19 +59,62 @@ fun AdminScreen(
                         modifier = Modifier.padding(16.dp)
                     ) {
                         Text(
-                            text = "Welcome to the Admin Dashboard",
+                            text = "Stream Settings",
                             style = MaterialTheme.typography.titleLarge
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "This area is restricted to administrators only.",
-                            style = MaterialTheme.typography.bodyMedium
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        OutlinedTextField(
+                            value = streamUrl,
+                            onValueChange = { streamUrl = it },
+                            label = { Text("Stream URL") },
+                            modifier = Modifier.fillMaxWidth(),
+                            supportingText = {
+                                streamSettings?.let { settings ->
+                                    val dateFormat = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+                                    Text(
+                                        "Last updated: ${dateFormat.format(Date(settings.lastUpdated))}",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
                         )
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        Button(
+                            onClick = {
+                                adminViewModel.updateStreamUrl(streamUrl)
+                                showSuccessMessage = true
+                            },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Icon(
+                                Icons.Default.Save,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Save Changes")
+                        }
                     }
                 }
             }
-
-            // Add more admin features here as needed
         }
+    }
+
+    if (showSuccessMessage) {
+        AlertDialog(
+            onDismissRequest = { showSuccessMessage = false },
+            title = { Text("Success") },
+            text = { Text("Stream URL has been updated successfully.") },
+            confirmButton = {
+                TextButton(
+                    onClick = { showSuccessMessage = false }
+                ) {
+                    Text("OK")
+                }
+            }
+        )
     }
 } 
