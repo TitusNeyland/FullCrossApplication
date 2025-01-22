@@ -18,12 +18,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.util.UUID
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 
 class NotesViewModel(application: Application) : AndroidViewModel(application) {
     private val database = AppDatabase.getDatabase(application)
     private val noteDao = database.noteDao()
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
+    private var authStateListener: FirebaseAuth.AuthStateListener? = null
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate = _selectedDate.asStateFlow()
@@ -40,16 +47,31 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentUserName = MutableStateFlow<String?>(null)
     val currentUserName = _currentUserName.asStateFlow()
 
+    private var discussionsListener: com.google.firebase.firestore.ListenerRegistration? = null
+
     init {
-        // Listen for auth state changes
-        auth.addAuthStateListener { firebaseAuth ->
+        setupAuthStateListener()
+        if (auth.currentUser != null) {
+            refreshAllData()
+        }
+    }
+
+    private fun setupAuthStateListener() {
+        authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
             if (firebaseAuth.currentUser != null) {
                 refreshAllData()
             } else {
-                // Clear all data when user logs out
                 clearAllData()
             }
         }
+        authStateListener?.let { auth.addAuthStateListener(it) }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        authStateListener?.let { auth.removeAuthStateListener(it) }
+        discussionsListener?.remove()
+        viewModelScope.cancel()
     }
 
     private fun clearAllData() {
@@ -154,81 +176,98 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun loadDiscussions() {
-        viewModelScope.launch {
-            try {
-                // Listen for real-time updates to discussions
-                firestore.collection("discussions")
-                    .orderBy("timestamp", Query.Direction.DESCENDING)
-                    .addSnapshotListener { snapshot, e ->
-                        if (e != null) {
-                            // Handle error
-                            return@addSnapshotListener
-                        }
+        discussionsListener?.remove()
+        discussionsListener = firestore.collection("discussions")
+            .orderBy("timestamp", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    return@addSnapshotListener
+                }
 
-                        // Launch a new coroutine for processing the snapshot
-                        viewModelScope.launch {
-                            try {
-                                val discussionsList = snapshot?.documents?.map { doc ->
-                                    val discussion = Discussion(
-                                        id = doc.id,
-                                        title = doc.getString("title") ?: "",
-                                        content = doc.getString("content") ?: "",
-                                        authorId = doc.getString("authorId") ?: "",
-                                        authorName = doc.getString("authorName") ?: "",
-                                        timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis(),
-                                        likes = doc.getLong("likes")?.toInt() ?: 0,
-                                        commentCount = doc.getLong("commentCount")?.toInt() ?: 0,
-                                        likedByUsers = (doc.get("likedByUsers") as? List<String>)?.toSet() ?: emptySet()
-                                    )
+                viewModelScope.launch {
+                    try {
+                        val discussionsWithComments = snapshot?.documents?.map { doc ->
+                            // First create the discussion
+                            val discussion = Discussion(
+                                id = doc.id,
+                                title = doc.getString("title") ?: "",
+                                content = doc.getString("content") ?: "",
+                                authorId = doc.getString("authorId") ?: "",
+                                authorName = doc.getString("authorName") ?: "",
+                                timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis(),
+                                likes = doc.getLong("likes")?.toInt() ?: 0,
+                                commentCount = doc.getLong("commentCount")?.toInt() ?: 0,
+                                likedByUsers = (doc.get("likedByUsers") as? List<String>)?.toSet() ?: emptySet()
+                            )
 
-                                    // Set up real-time listener for comments of this discussion
-                                    doc.reference.collection("comments")
-                                        .orderBy("timestamp")
-                                        .addSnapshotListener { commentsSnapshot, commentsError ->
-                                            if (commentsError != null) {
-                                                return@addSnapshotListener
-                                            }
+                            // Set up real-time listener for comments
+                            doc.reference.collection("comments")
+                                .orderBy("timestamp")
+                                .addSnapshotListener { commentsSnapshot, commentsError ->
+                                    if (commentsError != null) {
+                                        return@addSnapshotListener
+                                    }
 
-                                            viewModelScope.launch {
-                                                val comments = commentsSnapshot?.documents?.map { commentDoc ->
-                                                    Comment(
-                                                        id = commentDoc.id,
-                                                        discussionId = doc.id,
-                                                        content = commentDoc.getString("content") ?: "",
-                                                        authorId = commentDoc.getString("authorId") ?: "",
-                                                        authorName = commentDoc.getString("authorName") ?: "",
-                                                        timestamp = commentDoc.getLong("timestamp") ?: System.currentTimeMillis(),
-                                                        likes = commentDoc.getLong("likes")?.toInt() ?: 0
-                                                    )
-                                                } ?: emptyList()
+                                    val comments = commentsSnapshot?.documents?.mapNotNull { commentDoc ->
+                                        val comment = Comment(
+                                            id = commentDoc.id,
+                                            discussionId = doc.id,
+                                            content = commentDoc.getString("content") ?: "",
+                                            authorId = commentDoc.getString("authorId") ?: "",
+                                            authorName = commentDoc.getString("authorName") ?: "",
+                                            timestamp = commentDoc.getLong("timestamp") ?: System.currentTimeMillis(),
+                                            likes = commentDoc.getLong("likes")?.toInt() ?: 0,
+                                            parentCommentId = commentDoc.getString("parentCommentId"),
+                                            replyToAuthorName = commentDoc.getString("replyToAuthorName"),
+                                            replyCount = commentDoc.getLong("replyCount")?.toInt() ?: 0,
+                                            isReply = commentDoc.getBoolean("isReply") ?: false
+                                        )
+                                        comment
+                                    } ?: emptyList()
 
-                                                // Update the discussions list with new comments
-                                                _discussions.value = _discussions.value.map { existingDiscussion ->
-                                                    if (existingDiscussion.id == discussion.id) {
-                                                        existingDiscussion.copy(
-                                                            comments = comments,
-                                                            commentCount = comments.size
-                                                        )
-                                                    } else {
-                                                        existingDiscussion
-                                                    }
-                                                }
-                                            }
+                                    // Group comments by parent ID to organize replies
+                                    val commentMap = comments.groupBy { it.parentCommentId }
+                                    
+                                    // Get top-level comments (no parent)
+                                    val topLevelComments = commentMap[null] ?: emptyList()
+                                    
+                                    // Create a list with all comments in the correct order
+                                    val orderedComments = topLevelComments.flatMap { parentComment ->
+                                        listOf(parentComment) + (commentMap[parentComment.id] ?: emptyList())
+                                    }
+
+                                    // Find the current discussion in the list and update its comments
+                                    val currentDiscussions = _discussions.value
+                                    val updatedDiscussions = currentDiscussions.map { existingDiscussion ->
+                                        if (existingDiscussion.id == doc.id) {
+                                            existingDiscussion.copy(comments = orderedComments)
+                                        } else {
+                                            existingDiscussion
                                         }
+                                    }
+                                    _discussions.value = updatedDiscussions
+                                }
 
-                                    discussion
-                                } ?: emptyList()
+                            discussion
+                        } ?: emptyList()
 
-                                _discussions.value = discussionsList
-                            } catch (e: Exception) {
-                                // Handle error fetching comments
+                        // Only update the discussions list if it's empty or if there are changes
+                        if (_discussions.value.isEmpty()) {
+                            _discussions.value = discussionsWithComments
+                        } else {
+                            // Update only the discussions list metadata, keeping existing comments
+                            val updatedDiscussions = _discussions.value.map { existingDiscussion ->
+                                discussionsWithComments.find { it.id == existingDiscussion.id }
+                                    ?.copy(comments = existingDiscussion.comments)
+                                    ?: existingDiscussion
                             }
+                            _discussions.value = updatedDiscussions
                         }
+                    } catch (e: Exception) {
+                        // Handle error
                     }
-            } catch (e: Exception) {
-                // Handle error setting up listener
+                }
             }
-        }
     }
 
     fun addDiscussion(title: String, content: String) {
@@ -236,21 +275,40 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val currentUserId = auth.currentUser?.uid ?: return@launch
                 val currentUserName = _currentUserName.value ?: "Anonymous"
+                val timestamp = System.currentTimeMillis()
                 
                 val discussionData = hashMapOf(
                     "title" to title,
                     "content" to content,
                     "authorId" to currentUserId,
                     "authorName" to currentUserName,
-                    "timestamp" to System.currentTimeMillis(),
+                    "timestamp" to timestamp,
                     "likes" to 0,
                     "commentCount" to 0,
                     "likedByUsers" to listOf<String>()
                 )
 
-                firestore.collection("discussions")
+                // Add the discussion to Firestore
+                val docRef = firestore.collection("discussions")
                     .add(discussionData)
                     .await()
+
+                // Create a new Discussion object
+                val newDiscussion = Discussion(
+                    id = docRef.id,
+                    title = title,
+                    content = content,
+                    authorId = currentUserId,
+                    authorName = currentUserName,
+                    timestamp = timestamp,
+                    likes = 0,
+                    commentCount = 0,
+                    likedByUsers = emptySet(),
+                    comments = emptyList()
+                )
+
+                // Update the local state immediately
+                _discussions.value = listOf(newDiscussion) + _discussions.value
 
             } catch (e: Exception) {
                 // Handle error
@@ -290,7 +348,7 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun addComment(discussionId: String, content: String) {
+    fun addComment(discussionId: String, content: String, parentCommentId: String? = null, replyToAuthorName: String? = null) {
         viewModelScope.launch {
             try {
                 val currentUserId = auth.currentUser?.uid ?: return@launch
@@ -310,19 +368,32 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
                     "authorId" to currentUserId,
                     "authorName" to currentUserName,
                     "timestamp" to System.currentTimeMillis(),
-                    "likes" to 0
+                    "likes" to 0,
+                    "parentCommentId" to parentCommentId,
+                    "replyToAuthorName" to replyToAuthorName,
+                    "replyCount" to 0,
+                    "isReply" to (parentCommentId != null)
                 )
 
                 // Add comment to subcollection
-                firestore.collection("discussions").document(discussionId)
+                val commentRef = firestore.collection("discussions").document(discussionId)
                     .collection("comments")
                     .add(commentData)
                     .await()
 
-                // Update comment count
+                // Update comment count on discussion
                 firestore.collection("discussions").document(discussionId)
                     .update("commentCount", FieldValue.increment(1))
                     .await()
+
+                // If this is a reply, update the parent comment's reply count
+                if (parentCommentId != null) {
+                    firestore.collection("discussions").document(discussionId)
+                        .collection("comments")
+                        .document(parentCommentId)
+                        .update("replyCount", FieldValue.increment(1))
+                        .await()
+                }
 
             } catch (e: Exception) {
                 // Handle error
@@ -333,22 +404,95 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteComment(discussionId: String, commentId: String) {
         viewModelScope.launch {
             try {
-                // Delete the comment
-                firestore.collection("discussions")
+                // Get the comment to check if it's a reply and get its parent comment ID
+                val commentDoc = firestore.collection("discussions")
                     .document(discussionId)
                     .collection("comments")
                     .document(commentId)
-                    .delete()
+                    .get()
                     .await()
 
-                // Decrement the comment count
-                firestore.collection("discussions")
-                    .document(discussionId)
-                    .update("commentCount", FieldValue.increment(-1))
-                    .await()
+                val isReply = commentDoc.getBoolean("isReply") ?: false
+                val parentCommentId = commentDoc.getString("parentCommentId")
+                val replyCount = commentDoc.getLong("replyCount")?.toInt() ?: 0
+
+                // Start a batch write
+                val batch = firestore.batch()
+                val discussionRef = firestore.collection("discussions").document(discussionId)
+                val commentRef = discussionRef.collection("comments").document(commentId)
+
+                // If this is a parent comment with replies, delete all replies first
+                if (!isReply && replyCount > 0) {
+                    // Get all replies to this comment
+                    val replies = discussionRef.collection("comments")
+                        .whereEqualTo("parentCommentId", commentId)
+                        .get()
+                        .await()
+
+                    // Add all reply deletions to the batch
+                    replies.documents.forEach { replyDoc ->
+                        batch.delete(replyDoc.reference)
+                    }
+
+                    // Update discussion comment count to account for deleted replies
+                    batch.update(discussionRef, "commentCount", FieldValue.increment(-(replies.size() + 1).toLong()))
+                } else if (isReply && parentCommentId != null) {
+                    // If this is a reply, update the parent comment's reply count
+                    val parentCommentRef = discussionRef.collection("comments").document(parentCommentId)
+                    batch.update(parentCommentRef, "replyCount", FieldValue.increment(-1L))
+                    // Update discussion comment count for the single reply
+                    batch.update(discussionRef, "commentCount", FieldValue.increment(-1L))
+                } else {
+                    // For a regular comment with no replies
+                    batch.update(discussionRef, "commentCount", FieldValue.increment(-1L))
+                }
+
+                // Delete the comment itself
+                batch.delete(commentRef)
+
+                // Commit all the changes
+                batch.commit().await()
 
             } catch (e: Exception) {
                 // Handle error
+            }
+        }
+    }
+
+    fun deleteDiscussion(discussionId: String) {
+        viewModelScope.launch {
+            try {
+                val currentUserId = auth.currentUser?.uid ?: return@launch
+                
+                // Get the discussion to verify ownership
+                val discussion = firestore.collection("discussions")
+                    .document(discussionId)
+                    .get()
+                    .await()
+
+                // Only allow deletion if the current user is the author
+                if (discussion.getString("authorId") == currentUserId) {
+                    // Update local state immediately
+                    _discussions.value = _discussions.value.filter { it.id != discussionId }
+
+                    // Delete all comments first
+                    val comments = firestore.collection("discussions")
+                        .document(discussionId)
+                        .collection("comments")
+                        .get()
+                        .await()
+
+                    // Batch delete all comments and the discussion
+                    val batch = firestore.batch()
+                    comments.documents.forEach { comment ->
+                        batch.delete(comment.reference)
+                    }
+                    batch.delete(discussion.reference)
+                    batch.commit().await()
+                }
+            } catch (e: Exception) {
+                // If there was an error deleting from Firestore, revert the local state
+                loadDiscussions()
             }
         }
     }
