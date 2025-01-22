@@ -165,7 +165,9 @@ fun SignUpScreen(
                 if (validateInputs(firstName, lastName, email, password, confirmPassword)) {
                     authViewModel.signUp(email, password, firstName, lastName)
                 } else {
-                    authViewModel.setError(getValidationError(firstName, lastName, email, password, confirmPassword))
+                    getValidationError(firstName, lastName, email, password, confirmPassword)?.let { error ->
+                        authViewModel.setError(error)
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth(),
