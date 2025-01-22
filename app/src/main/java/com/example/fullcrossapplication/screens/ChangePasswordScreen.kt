@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.fullcrossapplication.viewmodels.AuthViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.fullcrossapplication.utils.PasswordValidator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,7 +93,13 @@ fun ChangePasswordScreen(
                     cursorColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
                     focusedLabelColor = MaterialTheme.colorScheme.onBackground,
                     unfocusedLabelColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
-                )
+                ),
+                supportingText = {
+                    Text(
+                        text = PasswordValidator.getPasswordRequirementsMessage(),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             )
 
             // Confirm new password
@@ -125,7 +132,7 @@ fun ChangePasswordScreen(
                             }
                         }
                     } else {
-                        authViewModel.setError("New passwords don't match or are too short")
+                        authViewModel.setError("Please ensure your new password meets the requirements and matches the confirmation")
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -175,5 +182,5 @@ fun ChangePasswordScreen(
 }
 
 private fun validatePasswords(newPassword: String, confirmPassword: String): Boolean {
-    return newPassword == confirmPassword && newPassword.length >= 6
+    return newPassword == confirmPassword && PasswordValidator.validatePassword(newPassword)
 } 
