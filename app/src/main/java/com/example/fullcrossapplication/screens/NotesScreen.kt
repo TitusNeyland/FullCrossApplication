@@ -485,6 +485,7 @@ private fun CommentItem(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showReplies by remember { mutableStateOf(false) }
     val viewModel: NotesViewModel = viewModel()
+    val discussions by viewModel.discussions.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -616,7 +617,7 @@ private fun CommentItem(
                     .padding(start = 16.dp, top = 8.dp)
             ) {
                 // Get replies from the discussion's comments list
-                val discussion = viewModel.discussions.value.find { it.id == discussionId }
+                val discussion = discussions.find { it.id == discussionId }
                 val replies = discussion?.comments?.filter { it.parentCommentId == comment.id } ?: emptyList()
                 
                 replies.forEach { reply ->
