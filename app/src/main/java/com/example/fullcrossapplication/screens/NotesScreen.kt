@@ -594,10 +594,10 @@ private fun CommentItem(
                         modifier = Modifier.size(24.dp)
                     ) {
                         Icon(
-                            Icons.Default.Delete,
+                            Icons.Default.Close,
                             contentDescription = "Delete comment",
                             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
@@ -894,12 +894,13 @@ private fun DiscussionCard(
                 if (discussion.authorId == currentUserId) {
                     IconButton(
                         onClick = { showDeleteDialog = true },
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
-                            Icons.Default.Delete,
+                            Icons.Default.Close,
                             contentDescription = "Delete discussion",
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
@@ -1046,12 +1047,14 @@ private fun FullDiscussionSheet(
                 )
                 if (updatedDiscussion.authorId == currentUserId) {
                     IconButton(
-                        onClick = { showDeleteDialog = true }
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier.size(28.dp)
                     ) {
                         Icon(
-                            Icons.Default.Delete,
+                            Icons.Default.Close,
                             contentDescription = "Delete discussion",
-                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }

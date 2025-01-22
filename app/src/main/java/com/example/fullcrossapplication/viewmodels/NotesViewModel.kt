@@ -275,21 +275,40 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val currentUserId = auth.currentUser?.uid ?: return@launch
                 val currentUserName = _currentUserName.value ?: "Anonymous"
+                val timestamp = System.currentTimeMillis()
                 
                 val discussionData = hashMapOf(
                     "title" to title,
                     "content" to content,
                     "authorId" to currentUserId,
                     "authorName" to currentUserName,
-                    "timestamp" to System.currentTimeMillis(),
+                    "timestamp" to timestamp,
                     "likes" to 0,
                     "commentCount" to 0,
                     "likedByUsers" to listOf<String>()
                 )
 
-                firestore.collection("discussions")
+                // Add the discussion to Firestore
+                val docRef = firestore.collection("discussions")
                     .add(discussionData)
                     .await()
+
+                // Create a new Discussion object
+                val newDiscussion = Discussion(
+                    id = docRef.id,
+                    title = title,
+                    content = content,
+                    authorId = currentUserId,
+                    authorName = currentUserName,
+                    timestamp = timestamp,
+                    likes = 0,
+                    commentCount = 0,
+                    likedByUsers = emptySet(),
+                    comments = emptyList()
+                )
+
+                // Update the local state immediately
+                _discussions.value = listOf(newDiscussion) + _discussions.value
 
             } catch (e: Exception) {
                 // Handle error
@@ -453,6 +472,9 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
 
                 // Only allow deletion if the current user is the author
                 if (discussion.getString("authorId") == currentUserId) {
+                    // Update local state immediately
+                    _discussions.value = _discussions.value.filter { it.id != discussionId }
+
                     // Delete all comments first
                     val comments = firestore.collection("discussions")
                         .document(discussionId)
@@ -460,7 +482,7 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
                         .get()
                         .await()
 
-                    // Batch delete all comments
+                    // Batch delete all comments and the discussion
                     val batch = firestore.batch()
                     comments.documents.forEach { comment ->
                         batch.delete(comment.reference)
@@ -469,7 +491,8 @@ class NotesViewModel(application: Application) : AndroidViewModel(application) {
                     batch.commit().await()
                 }
             } catch (e: Exception) {
-                // Handle error
+                // If there was an error deleting from Firestore, revert the local state
+                loadDiscussions()
             }
         }
     }
