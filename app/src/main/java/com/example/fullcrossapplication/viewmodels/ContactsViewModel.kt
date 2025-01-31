@@ -1,6 +1,7 @@
 package com.example.fullcrossapplication.viewmodels
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -122,50 +123,66 @@ class ContactsViewModel private constructor(
         _searchQuery.value = ""
         _searchResults.value = emptyList()
     }
-    
+
     fun sendFriendRequest(toUserId: String, toUserName: String) {
         viewModelScope.launch {
             try {
                 val currentUser = FirebaseAuth.getInstance().currentUser
                     ?: throw Exception("Not logged in")
-                
+
                 // Prevent sending friend request to self
                 if (currentUser.uid == toUserId) {
                     _error.value = "You cannot send a friend request to yourself"
                     return@launch
                 }
-                
+
                 val currentUserDoc = FirebaseFirestore.getInstance()
                     .collection("users")
                     .document(currentUser.uid)
                     .get()
                     .await()
-                
+
                 val currentUserName = "${currentUserDoc.getString("firstName")} ${currentUserDoc.getString("lastName")}"
                 val timestamp = System.currentTimeMillis()
-                
+
                 // Create batch for atomic operations
                 val batch = FirebaseFirestore.getInstance().batch()
-                
-                // Create friendship document only for recipient
+
+                // Create friendship document for recipient
                 val recipientFriendshipRef = FirebaseFirestore.getInstance()
                     .collection("users")
                     .document(toUserId)
                     .collection("friendships")
                     .document(currentUser.uid)
-                
+
                 batch.set(recipientFriendshipRef, mapOf(
                     "status" to "pending",
-                    "timestamp" to timestamp
+                    "timestamp" to timestamp,
+                    "type" to "received",  // Add this
+                    "fromUserName" to currentUserName  // Add this
                 ))
-                
+
+                // Create friendship document for sender (Add this block)
+                val senderFriendshipRef = FirebaseFirestore.getInstance()
+                    .collection("users")
+                    .document(currentUser.uid)
+                    .collection("friendships")
+                    .document(toUserId)
+
+                batch.set(senderFriendshipRef, mapOf(
+                    "status" to "pending",
+                    "timestamp" to timestamp,
+                    "type" to "sent",
+                    "toUserName" to toUserName
+                ))
+
                 // Create notification for recipient
                 val notificationRef = FirebaseFirestore.getInstance()
                     .collection("users")
                     .document(toUserId)
                     .collection("notifications")
                     .document()
-                
+
                 batch.set(notificationRef, mapOf(
                     "type" to "FRIEND_REQUEST",
                     "fromUserId" to currentUser.uid,
@@ -173,16 +190,21 @@ class ContactsViewModel private constructor(
                     "timestamp" to timestamp,
                     "read" to false
                 ))
-                
+
+                // Add logging
+                println("📤 Sending friend request to: $toUserName")
+
                 // Commit all changes atomically
                 batch.commit().await()
-                
+                println("✅ Friend request successfully sent to $toUserName")
+
             } catch (e: Exception) {
+                println("❌ Friend Request Failed: ${e.message}")
                 _error.value = "Failed to send friend request: ${e.message}"
             }
         }
     }
-    
+
     fun acceptFriendRequest(fromUserId: String) {
         viewModelScope.launch {
             try {
@@ -327,20 +349,22 @@ class ContactsViewModel private constructor(
             }
         }
     }
-    
+
     private fun fetchPendingFriendRequests() {
         try {
             val currentUser = FirebaseAuth.getInstance().currentUser
                 ?: throw Exception("Not logged in")
-            
+
             // Set up real-time listener for friendships
             FirebaseFirestore.getInstance()
                 .collection("users")
                 .document(currentUser.uid)
                 .collection("friendships")
                 .whereEqualTo("status", "pending")
+                .whereEqualTo("type", "received")  // Add this line to only get received requests
                 .addSnapshotListener { snapshot, error ->
                     if (error != null) {
+                        println("❌ Error fetching friend requests: ${error.message}")
                         _error.value = "Error fetching friend requests: ${error.message}"
                         return@addSnapshotListener
                     }
@@ -348,7 +372,9 @@ class ContactsViewModel private constructor(
                     viewModelScope.launch {
                         try {
                             val pendingRequests = mutableListOf<UserProfile>()
-                            
+
+                            println("📥 Processing ${snapshot?.documents?.size ?: 0} pending friend requests")
+
                             snapshot?.documents?.forEach { doc ->
                                 val friendId = doc.id
                                 try {
@@ -357,8 +383,11 @@ class ContactsViewModel private constructor(
                                         .document(friendId)
                                         .get()
                                         .await()
-                                    
+
                                     if (friendDoc.exists()) {
+                                        val fromUserName = doc.getString("fromUserName") ?: ""
+                                        println("👤 Received request from: $fromUserName")
+
                                         pendingRequests.add(
                                             UserProfile(
                                                 id = friendDoc.id,
@@ -370,18 +399,21 @@ class ContactsViewModel private constructor(
                                         )
                                     }
                                 } catch (e: Exception) {
-                                    // Skip this friend if there's an error
+                                    println("❌ Error fetching friend details: ${e.message}")
                                     _error.value = "Error fetching friend details: ${e.message}"
                                 }
                             }
-                            
+
                             _pendingFriendRequests.value = pendingRequests
+                            println("✅ Updated pending requests list with ${pendingRequests.size} requests")
                         } catch (e: Exception) {
+                            println("❌ Failed to process friend requests: ${e.message}")
                             _error.value = "Failed to process friend requests: ${e.message}"
                         }
                     }
                 }
         } catch (e: Exception) {
+            println("❌ Failed to set up friend requests listener: ${e.message}")
             _error.value = "Failed to set up friend requests listener: ${e.message}"
         }
     }
