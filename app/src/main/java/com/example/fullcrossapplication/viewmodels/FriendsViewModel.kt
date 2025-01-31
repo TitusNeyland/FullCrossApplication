@@ -1,5 +1,6 @@
 package com.example.fullcrossapplication.viewmodels
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fullcrossapplication.data.FriendshipStatus
@@ -82,6 +83,7 @@ class FriendsViewModel : ViewModel() {
     fun sendFriendRequest(userId: String) {
         viewModelScope.launch {
             try {
+                Log.d("Firebase", "friends view model request sent successfully")
                 val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
                     ?: throw Exception("User not logged in")
                 

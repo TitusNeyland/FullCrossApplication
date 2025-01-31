@@ -116,20 +116,20 @@ data class LiveStream(
 fun WatchScreen(
     notificationsViewModel: NotificationsViewModel = viewModel(),
     authViewModel: AuthViewModel = viewModel(),
-    watchViewModel: WatchViewModel = viewModel()
+    watchViewModel: WatchViewModel = viewModel(),
+    contactsViewModel: ContactsViewModel = viewModel(
+        factory = ContactsViewModel.provideFactory(
+            application = LocalContext.current.applicationContext as Application,
+            authViewModel = authViewModel
+        )
+    )
 ) {
     var selectedTab by remember { mutableStateOf(WatchScreenTab.WATCH) }
     var showSocialDialog by remember { mutableStateOf(false) }
     val viewerCount by watchViewModel.viewerCount.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val unreadCount by notificationsViewModel.unreadCount.collectAsStateWithLifecycle()
-    val contactsViewModel: ContactsViewModel = viewModel(
-        factory = ContactsViewModel.provideFactory(
-            application = context.applicationContext as Application,
-            authViewModel = authViewModel
-        )
-    )
     val pendingFriendRequests by contactsViewModel.pendingFriendRequests.collectAsState()
+    val unreadCount by notificationsViewModel.unreadCount.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -173,13 +173,13 @@ fun WatchScreen(
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                    if (unreadCount > 0) {
+                    if (pendingFriendRequests.isNotEmpty()) {
                         Badge(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
                                 .offset(x = (-4).dp, y = 4.dp)
                         ) {
-                            Text(unreadCount.toString())
+                            Text(pendingFriendRequests.size.toString())
                         }
                     }
                 }
@@ -278,7 +278,9 @@ fun WatchScreen(
                 // TODO: Implement add friends
                 Toast.makeText(context, "Add friends feature coming soon!", Toast.LENGTH_SHORT).show()
                 showSocialDialog = false
-            }
+            },
+            contactsViewModel = contactsViewModel,
+            notificationsViewModel = notificationsViewModel
         )
     }
 }
@@ -607,9 +609,7 @@ private fun SocialConnectionDialog(
     val isSearching by contactsViewModel.isSearching.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     val notifications by notificationsViewModel.notifications.collectAsStateWithLifecycle()
-    val friendRequests = notifications.filter { 
-        it.type == NotificationType.FRIEND_REQUEST && !it.read 
-    }
+    val pendingFriendRequests by contactsViewModel.pendingFriendRequests.collectAsState()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -637,9 +637,9 @@ private fun SocialConnectionDialog(
         text = {
             Column {
                 // Friend Requests Section (if there are any)
-                if (friendRequests.isNotEmpty()) {
+                if (pendingFriendRequests.isNotEmpty()) {
                     Text(
-                        "Friend Requests (${friendRequests.size})",
+                        "Friend Requests (${pendingFriendRequests.size})",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -650,7 +650,7 @@ private fun SocialConnectionDialog(
                             .heightIn(max = 200.dp)
                             .fillMaxWidth()
                     ) {
-                        items(friendRequests) { request ->
+                        items(pendingFriendRequests) { request ->
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -661,7 +661,7 @@ private fun SocialConnectionDialog(
                             ) {
                                 ListItem(
                                     headlineContent = { 
-                                        Text(request.fromUserName)
+                                        Text("${request.firstName} ${request.lastName}")
                                     },
                                     supportingContent = {
                                         Text(
@@ -676,18 +676,24 @@ private fun SocialConnectionDialog(
                                         ) {
                                             TextButton(
                                                 onClick = {
-                                                    // Accept friend request
-                                                    contactsViewModel.acceptFriendRequest(request.fromUserId)
-                                                    notificationsViewModel.markAsRead(request.id)
+                                                    contactsViewModel.acceptFriendRequest(request.id)
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Friend request accepted",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 }
                                             ) {
                                                 Text("Accept")
                                             }
                                             TextButton(
                                                 onClick = {
-                                                    // Decline friend request
-                                                    contactsViewModel.declineFriendRequest(request.fromUserId)
-                                                    notificationsViewModel.markAsRead(request.id)
+                                                    contactsViewModel.declineFriendRequest(request.id)
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Friend request declined",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
                                                 }
                                             ) {
                                                 Text("Decline")
@@ -1000,11 +1006,13 @@ private fun SocialConnectionDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(
-                    "Close",
-                    color = MaterialTheme.colorScheme.onBackground
+            TextButton(
+                onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onBackground
                 )
+            ) {
+                Text("Close")
             }
         }
     )
